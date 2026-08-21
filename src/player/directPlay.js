@@ -1,4 +1,5 @@
 import { playForeground } from './playForeground.js';
+import { trace } from '../debugTrace.js';
 
 // Shared by the typed CLI and the Ink "Play" screen — both hand off to a real
 // foreground mpv the same way, so this is the one place that logic lives.
@@ -7,9 +8,13 @@ import { playForeground } from './playForeground.js';
 // playing", not before (the file isn't ready yet) and not after (mpv has
 // already exited by the time this whole call resolves).
 export async function playSongForeground({ resolver, platform, videoId, title, loop, onReady }) {
+  trace(`playSongForeground: downloading videoId=${videoId}`);
   const localFile = await resolver.downloadAudio(videoId, platform.getCacheDir());
+  trace(`playSongForeground: downloaded to ${localFile}, calling onReady`);
   if (onReady) onReady();
+  trace('playSongForeground: calling playForeground');
   await playForeground({ files: [{ path: localFile, title }], loop });
+  trace('playSongForeground: playForeground resolved, returning');
 }
 
 // Every song is downloaded before mpv ever starts — one at a time, in
