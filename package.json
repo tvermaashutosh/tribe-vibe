@@ -1,0 +1,29 @@
+{
+  "name": "tribe-vibe",
+  "version": "0.1.0",
+  "description": "A smart, keyboard-first CLI music player that never makes you remember its syntax.",
+  "type": "module",
+  "bin": {
+    "tv": "./bin/tv.js",
+    "tribe-vibe": "./bin/tv.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node bin/tv.js",
+    "test": "node --test 'test/*.test.mjs'"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "ink": "^5.0.1",
+    "ink-select-input": "^6.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
