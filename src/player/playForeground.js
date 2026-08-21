@@ -1,4 +1,37 @@
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { trace } from '../debugTrace.js';
+
+const SIGNAL_EXIT_CODES = { SIGINT: 130, SIGHUP: 129, SIGTERM: 143 };
+
+// Guards only the window between "mpv just exited" and this process's own
+// controlled exit — confirmed by tracing a real hang that this process can
+// die here without ever running its own shutdown code (no further trace
+// lines at all), from something external signaling it (mpv shares this
+// process's group by default, so a shell/job-control hiccup around mpv's own
+// terminal-ownership handling can catch this process too, and Node's default
+// disposition for these signals is immediate termination with zero cleanup).
+// Deliberately NOT active while mpv is still running — a real terminal
+// signal reaches mpv and this process at the same instant then, and running
+// stty sane concurrently with mpv still legitimately owning raw mode would
+// fight its own cleanup instead of helping.
+function guardVulnerableWindow() {
+  const onSignal = (signal) => {
+    trace(`playForeground: caught ${signal} in the post-mpv-exit window, restoring terminal before exit`);
+    if (process.stdin.isTTY) {
+      try {
+        execFileSync('stty', ['sane'], { stdio: 'inherit' });
+      } catch {
+        // best-effort only
+      }
+    }
+    process.exit(SIGNAL_EXIT_CODES[signal]);
+  };
+  const signals = Object.keys(SIGNAL_EXIT_CODES);
+  for (const signal of signals) process.on(signal, onSignal);
+  return () => {
+    for (const signal of signals) process.removeListener(signal, onSignal);
+  };
+}
 
 // Runs mpv attached to this terminal — exactly the tswift model: inherited
 // stdio, mpv's own --term-osd-bar, mpv reading space/arrow keys directly off
@@ -26,10 +59,35 @@ export function playForeground({ files, loop }) {
     else args.push(file.path);
   }
 
+  // Confirmed by reproducing a real hang: after Ink unmounts, its own
+  // 'readable' listener on stdin is gone, but the stream itself is never
+  // explicitly paused — and pressing Enter (a full line) was reliably the
+  // only thing that unstuck it, well before mpv's own 'exit' event ever even
+  // fired in this process's JS callbacks. mpv doesn't need Node's own stream
+  // wrapper active at all — it reads the raw inherited fd directly — so
+  // there's nothing to lose by fully detaching Node's interest in stdin
+  // before mpv ever starts.
+  if (process.stdin.isTTY) process.stdin.pause();
+
+  trace(`playForeground: spawning mpv, args=${JSON.stringify(args)}`);
   return new Promise((resolve, reject) => {
     const child = spawn('mpv', args, { stdio: 'inherit' });
-    child.once('error', (err) => reject(new Error(`mpv is not available — is it installed? (${err.message})`)));
-    child.once('exit', () => resolve(restoreTerminal()));
+    child.once('error', (err) => {
+      trace(`playForeground: mpv spawn error: ${err.message}`);
+      reject(new Error(`mpv is not available — is it installed? (${err.message})`));
+    });
+    child.once('exit', (code, signal) => {
+      trace(`playForeground: mpv exited code=${code} signal=${signal}, calling restoreTerminal()`);
+      const unguard = guardVulnerableWindow();
+      const finish = () => {
+        unguard();
+        trace('playForeground: vulnerable window closed, resolving playForeground promise');
+        resolve();
+      };
+      const restorePromise = restoreTerminal();
+      if (restorePromise) restorePromise.then(finish);
+      else finish();
+    });
   });
 }
 
@@ -43,10 +101,21 @@ export function playForeground({ files, loop }) {
 // hygiene, not a reimplementation of any mpv control. Best-effort only: no
 // real tty (tests, some CI) or no `stty` (Windows) means nothing to restore.
 function restoreTerminal() {
-  if (process.platform === 'win32' || !process.stdin.isTTY) return;
+  trace(`restoreTerminal: platform=${process.platform} isTTY=${process.stdin.isTTY}`);
+  if (process.platform === 'win32' || !process.stdin.isTTY) {
+    trace('restoreTerminal: guard skipped, no stty spawned');
+    return null;
+  }
   return new Promise((resolve) => {
+    trace('restoreTerminal: spawning stty sane');
     const stty = spawn('stty', ['sane'], { stdio: 'inherit' });
-    stty.once('error', () => resolve());
-    stty.once('exit', () => resolve());
+    stty.once('error', (err) => {
+      trace(`restoreTerminal: stty spawn error: ${err.message}`);
+      resolve();
+    });
+    stty.once('exit', (code, signal) => {
+      trace(`restoreTerminal: stty exited code=${code} signal=${signal}`);
+      resolve();
+    });
   });
 }

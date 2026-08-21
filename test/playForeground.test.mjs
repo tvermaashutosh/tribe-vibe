@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
 import { playForeground } from '../src/player/playForeground.js';
+
+const SIGNAL_GUARD_DRIVER = fileURLToPath(new URL('./helpers/signalGuardDriver.mjs', import.meta.url));
 
 test('playForeground rejects clearly when mpv is not on PATH', async () => {
   const originalPath = process.env.PATH;
@@ -15,6 +19,60 @@ test('playForeground rejects clearly when mpv is not on PATH', async () => {
     );
   } finally {
     process.env.PATH = originalPath;
+  }
+});
+
+test('playForeground pauses process.stdin before spawning mpv, when stdin looks like a real tty', async () => {
+  // Confirmed by reproducing a real hang: Ink removes its own 'readable'
+  // listener on unmount but never pauses the stream itself, and mpv doesn't
+  // need Node's own stream wrapper active at all (it reads the raw inherited
+  // fd directly) — so this should always run before mpv starts, whenever
+  // stdin is a real tty.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  fs.writeFileSync(path.join(dir, 'mpv'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  fs.writeFileSync(path.join(dir, 'stty'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  const originalIsTTY = process.stdin.isTTY;
+  const originalPause = process.stdin.pause;
+  let pauseCalled = false;
+  process.env.PATH = `${dir}:${originalPath}`;
+  Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+  process.stdin.pause = () => {
+    pauseCalled = true;
+    return process.stdin;
+  };
+  try {
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    assert.equal(pauseCalled, true);
+  } finally {
+    process.env.PATH = originalPath;
+    Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+    process.stdin.pause = originalPause;
+  }
+});
+
+test('playForeground skips pausing stdin when it is not a real tty', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  fs.writeFileSync(path.join(dir, 'mpv'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  const originalIsTTY = process.stdin.isTTY;
+  const originalPause = process.stdin.pause;
+  let pauseCalled = false;
+  process.env.PATH = `${dir}:${originalPath}`;
+  Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+  process.stdin.pause = () => {
+    pauseCalled = true;
+    return process.stdin;
+  };
+  try {
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    assert.equal(pauseCalled, false);
+  } finally {
+    process.env.PATH = originalPath;
+    Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+    process.stdin.pause = originalPause;
   }
 });
 
@@ -89,6 +147,45 @@ test('playForeground runs "stty sane" after mpv exits, when stdin looks like a r
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
   }
 });
+
+test(
+  'playForeground restores the terminal and still exits cleanly if this process itself is signaled right after mpv exits',
+  async () => {
+    // Confirmed by tracing a real hang: this process can die in the window
+    // between "mpv just exited" and its own controlled exit without running
+    // ANY shutdown code, if something external signals it. Exercised via a
+    // real child process (not in-process) since it needs actual signal
+    // delivery and process.exit(), which would otherwise risk killing the
+    // test runner. The fake stty deliberately sleeps, widening the window
+    // long enough for the signal to reliably land inside it.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+    fs.writeFileSync(path.join(dir, 'mpv'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    const sttyCallsFile = path.join(dir, 'stty-calls.txt');
+    fs.writeFileSync(
+      path.join(dir, 'stty'),
+      `#!/bin/sh\nsleep 0.5\necho "$@" >> "${sttyCallsFile}"\nexit 0\n`,
+      { mode: 0o755 },
+    );
+
+    const child = spawn('node', [SIGNAL_GUARD_DRIVER], {
+      env: { ...process.env, PATH: `${dir}:${process.env.PATH}` },
+    });
+
+    const exited = new Promise((resolve) => {
+      child.once('exit', (code, signal) => resolve({ code, signal }));
+    });
+
+    // Long enough for the driver to spawn mpv, mpv to exit, and the
+    // vulnerable-window guard to register — short enough that the
+    // deliberately-slow fake stty is still in flight.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    child.kill('SIGTERM');
+
+    const { code } = await exited;
+    assert.equal(code, 143); // the guard's own SIGTERM exit code
+    assert.match(fs.readFileSync(sttyCallsFile, 'utf8'), /sane/);
+  },
+);
 
 test('playForeground skips "stty sane" entirely when stdin is not a real tty', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
