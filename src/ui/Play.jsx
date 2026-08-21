@@ -7,6 +7,7 @@ import { playSongForeground, playPlaylistForeground } from '../player/directPlay
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
 import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
+import { trace } from '../debugTrace.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
@@ -37,12 +38,17 @@ export default function Play({ ctx, onBack }) {
   // since by this point the Ink UI is already gone and there's nothing left
   // to return to.
   const handOffToForeground = async (playFn) => {
+    trace('handOffToForeground: calling unmountMenu()');
     ctx.unmountMenu();
+    trace('handOffToForeground: unmountMenu() returned, calling playFn()');
     try {
       await playFn();
+      trace('handOffToForeground: playFn() resolved, calling closeDaemon()');
       ctx.closeDaemon();
+      trace('handOffToForeground: closeDaemon() returned, calling process.exit(0)');
       process.exit(0);
     } catch (err) {
+      trace(`handOffToForeground: caught error: ${err.message}`);
       console.error(`tribe-vibe error: ${err.message}`);
       process.exit(1);
     }
