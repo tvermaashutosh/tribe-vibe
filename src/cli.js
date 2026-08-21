@@ -12,6 +12,7 @@ import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
 import { CONTROL_FLAGS } from './constants.js';
+import { trace } from './debugTrace.js';
 
 // Facade: this is the one entry point everything else hangs off of. It stays
 // a thin orchestrator on purpose — no business logic lives here, only wiring.
@@ -32,7 +33,11 @@ export async function run(argv) {
   const resolver = new YoutubeResolver();
   const commands = createCommandRegistry({ player });
 
-  const closeAndExit = () => ipc.close();
+  const closeAndExit = () => {
+    trace('cli.js: closeAndExit() calling ipc.close()');
+    ipc.close();
+    trace('cli.js: closeAndExit() returned');
+  };
 
   // No args -> the full Ink app. All alias/playlist/settings management lives
   // here and only here — the typed grammar below never grows a management path.
@@ -41,6 +46,7 @@ export async function run(argv) {
   // (player/ipc) passed in here is only for the Picker's quick audition preview.
   if (args.length === 0) {
     const { launchMenu } = await import('../dist/ui.js');
+    trace('cli.js: launching menu');
     await launchMenu({
       platform,
       aliasRepo,
@@ -52,6 +58,7 @@ export async function run(argv) {
       settings: settingsRepo.all(),
       saveSettings: (next) => settingsRepo.save(next),
     });
+    trace('cli.js: launchMenu() resolved (Ink unmounted), calling closeAndExit() and returning from run()');
     return closeAndExit();
   }
 
