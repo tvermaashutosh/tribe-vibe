@@ -8,6 +8,7 @@ import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
 import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
 import { formatPlaylistSongList } from './player/playlistSongList.js';
+import { formatNowPlaying } from './player/nowPlayingMessage.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
@@ -102,7 +103,7 @@ export async function run(argv) {
       videoId: intent.videoId,
       title: intent.title,
       loop: intent.modifiers?.loop,
-      onReady: () => console.log(`Now playing: ${intent.title}`),
+      onReady: () => console.log(formatNowPlaying(intent.title)),
     });
   } else if (intent.kind === 'playlist') {
     console.log('Resolving...');
@@ -134,7 +135,7 @@ export async function run(argv) {
         videoId: picked.videoId,
         title: picked.title,
         loop: intent.modifiers?.loop,
-        onReady: () => console.log(`Now playing: ${picked.title}`),
+        onReady: () => console.log(formatNowPlaying(picked.title)),
       });
     }
   }
