@@ -88,7 +88,8 @@ export default function Play({ ctx, onBack }) {
           playlistRepo: ctx.playlistRepo,
           playlistName: intent.playlistName,
           loop: intent.modifiers?.loop,
-          onReady: (playlist) => console.log(`${formatPlaylistSongList(playlist)}\n\nNow playing playlist: ${intent.playlistName}`),
+          onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
+          onReady: () => console.log(`Now playing playlist: ${intent.playlistName}`),
         }),
       );
       return;
