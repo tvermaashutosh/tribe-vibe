@@ -123,7 +123,7 @@ export default function Settings({ ctx, onBack }) {
             {check.fix && <Text color={theme.dim}> → {check.fix}</Text>}
           </Box>
         ))}
-        <Text color={theme.dim}>(esc back)</Text>
+        <SelectInput items={[{ label: '‹ Back', value: '__back__' }]} onSelect={() => setMode('list')} />
       </Box>
     );
   }
