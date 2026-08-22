@@ -1,6 +1,7 @@
 // Pulled out of Play.jsx, plain logic with no JSX, so it's testable without
 // needing a real TTY (Ink components can't be unit-tested here).
 import { sortByRecency } from './sortByRecency.js';
+import { fitLine, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/truncateToWidth.js';
 
 // Every artist alias, song alias, and playlist, in one browsable list,
 // grouped song -> playlist -> artist (most-specific/most-likely-to-be-what-
@@ -11,25 +12,31 @@ import { sortByRecency } from './sortByRecency.js';
 // deliberately keeps playlists out of its own listing — this is the one
 // place they're shown alongside aliases, since it's a discovery aid for what
 // you can type, not a management screen.
+//
+// Every label is "token → value (type)" — the token and type are always
+// short and shown in full; only the value (a video title or canonical
+// artist name, the one thing that can genuinely run long) gets truncated to
+// fit the real terminal width, rather than ever wrapping onto a second row.
 export function buildBrowseItems(aliasRepo, playlistRepo) {
+  const width = getTerminalWidth() - SELECTION_INDICATOR_WIDTH;
   const aliases = aliasRepo.all();
   const songItems = sortByRecency(aliases.filter((alias) => alias.type === 'song')).map((alias) => ({
     itemType: 'song',
     token: alias.token,
-    label: `${alias.token}  →  ${alias.title}  (song)`,
+    label: fitLine(`${alias.token}  →  `, alias.title, '  (song)', width),
     videoId: alias.videoId,
     title: alias.title,
   }));
   const playlistItems = sortByRecency(playlistRepo.all()).map((playlist) => ({
     itemType: 'playlist',
     token: playlist.name,
-    label: `${playlist.name}  →  ${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}  (playlist)`,
+    label: fitLine(`${playlist.name}  →  `, `${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}`, '  (playlist)', width),
     playlistName: playlist.name,
   }));
   const artistItems = sortByRecency(aliases.filter((alias) => alias.type === 'artist')).map((alias) => ({
     itemType: 'artist',
     token: alias.token,
-    label: `${alias.token}  →  ${alias.value}  (artist)`,
+    label: fitLine(`${alias.token}  →  `, alias.value, '  (artist)', width),
     artistName: alias.value,
   }));
   return [...songItems, ...playlistItems, ...artistItems];
