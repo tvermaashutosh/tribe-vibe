@@ -17,7 +17,7 @@ const SIGNAL_EXIT_CODES = { SIGINT: 130, SIGHUP: 129, SIGTERM: 143 };
 function guardVulnerableWindow() {
   const onSignal = (signal) => {
     trace(`playForeground: caught ${signal} in the post-mpv-exit window, restoring terminal before exit`);
-    if (process.stdin.isTTY) {
+    if (process.platform !== 'win32' && process.stdin.isTTY) {
       try {
         execFileSync('stty', ['sane'], { stdio: 'inherit' });
       } catch {
