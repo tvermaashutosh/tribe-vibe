@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { findFirstSelectable, moveSelection } from './skipListNav.js';
+import { theme } from './theme.js';
 
 // A minimal stand-in for ink-select-input, used only for lists that include a
 // non-interactive divider row (see divider.js). ink-select-input has no
@@ -9,8 +10,9 @@ import { findFirstSelectable, moveSelection } from './skipListNav.js';
 // would still be something you can arrow onto and get stuck on. This one
 // actually skips over any item marked `divider: true`, in whichever
 // direction you're moving, and never calls onSelect for one. Visual styling
-// (blue highlight, pointer indicator) matches ink-select-input's own default
-// exactly, so switching components here doesn't change how anything looks.
+// (theme.selected highlight, pointer indicator) matches ink-select-input's
+// own default exactly, so switching components here doesn't change how
+// anything looks.
 export default function SkipList({ items, onSelect }) {
   const [selectedIndex, setSelectedIndex] = useState(findFirstSelectable(items));
   const previousValues = useRef(items.map((item) => item.value).join('|'));
@@ -39,9 +41,9 @@ export default function SkipList({ items, onSelect }) {
         return (
           <Box key={item.value}>
             <Box marginRight={1}>
-              <Text color={isSelected ? 'blue' : undefined}>{isSelected ? '❯' : ' '}</Text>
+              <Text color={isSelected ? theme.selected : undefined}>{isSelected ? '❯' : ' '}</Text>
             </Box>
-            <Text color={isSelected ? 'blue' : undefined}>{item.label}</Text>
+            <Text color={isSelected ? theme.selected : undefined}>{item.label}</Text>
           </Box>
         );
       })}
