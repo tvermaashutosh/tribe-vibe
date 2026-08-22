@@ -155,7 +155,7 @@ export default function Play({ ctx, onBack }) {
         ) : (
           <Box flexDirection="column">
             {browseItems.map((item, i) => (
-              <Text key={item.token} color={i === browseIndex ? theme.accent : undefined}>
+              <Text key={item.token} color={i === browseIndex ? theme.selected : undefined}>
                 {i === browseIndex ? '❯ ' : '  '}
                 {item.label}
               </Text>
