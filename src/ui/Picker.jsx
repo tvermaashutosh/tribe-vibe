@@ -189,7 +189,7 @@ export default function Picker({
         const suffix = result.duration ? ` (${Math.round(result.duration)}s)` : '';
         const title = truncateToWidth(result.title, Math.max(getTerminalWidth() - prefix.length - suffix.length, 0));
         return (
-          <Text key={result.videoId} color={i === index ? theme.accent : undefined}>
+          <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
             {prefix}
             {title}
             {suffix}
