@@ -21,19 +21,23 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // playlist order, same as a single song's download-then-play. mpv is never
 // handed a raw YouTube URL here; that's what caused header mismatches and
 // pipe-format-detection failures in the first place (see YoutubeResolver).
-export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onReady }) {
+//
+// onPlaylistFound fires immediately, before any downloading — that's the
+// accurate moment to print what's queued up, not after the whole thing has
+// already downloaded and is about to play. onReady keeps its usual meaning:
+// fires right before mpv takes over the terminal.
+export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onReady }) {
   const playlist = playlistRepo.all().find((entry) => entry.name === playlistName);
   if (!playlist) throw new Error(`No playlist named "${playlistName}"`);
   if (playlist.songs.length === 0) throw new Error(`Playlist "${playlistName}" has no songs yet`);
+
+  if (onPlaylistFound) onPlaylistFound(playlist);
 
   const files = [];
   for (const song of playlist.songs) {
     const path = await resolver.downloadAudio(song.videoId, platform.getCacheDir());
     files.push({ path, title: song.title });
   }
-  // Passed the whole playlist (not just its name) so a caller can print the
-  // song list before mpv takes over the terminal — right here is the last
-  // moment stdout is still ours; once playForeground starts, mpv owns it.
   if (onReady) onReady(playlist);
   await playForeground({ files, loop });
 }

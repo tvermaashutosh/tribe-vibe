@@ -68,10 +68,19 @@ test(
 );
 
 test(
-  'playPlaylistForeground rejects a name that does not exist, or one with no songs — before ever calling onReady',
+  'playPlaylistForeground rejects a name that does not exist, or one with no songs — before ever calling onPlaylistFound or onReady',
   withFakeMpv(async () => {
+    let foundCalled = false;
     let readyCalled = false;
     const playlistRepo = { all: () => [{ name: 'empty', songs: [] }] };
+    const callbacks = {
+      onPlaylistFound: () => {
+        foundCalled = true;
+      },
+      onReady: () => {
+        readyCalled = true;
+      },
+    };
 
     await assert.rejects(
       () =>
@@ -80,9 +89,7 @@ test(
           platform: fakePlatform(),
           playlistRepo,
           playlistName: 'missing',
-          onReady: () => {
-            readyCalled = true;
-          },
+          ...callbacks,
         }),
       /No playlist named/,
     );
@@ -93,13 +100,39 @@ test(
           platform: fakePlatform(),
           playlistRepo,
           playlistName: 'empty',
-          onReady: () => {
-            readyCalled = true;
-          },
+          ...callbacks,
         }),
       /has no songs yet/,
     );
+    assert.equal(foundCalled, false);
     assert.equal(readyCalled, false);
+  }),
+);
+
+test(
+  'playPlaylistForeground fires onPlaylistFound immediately, before any downloading starts',
+  withFakeMpv(async () => {
+    const events = [];
+    const playlistRepo = {
+      all: () => [{ name: 'focus', songs: [{ videoId: 'a', title: 'Song A' }, { videoId: 'b', title: 'Song B' }] }],
+    };
+    const resolver = {
+      downloadAudio: async (videoId) => {
+        events.push(`download:${videoId}`);
+        return `/cache/${videoId}.m4a`;
+      },
+      toWatchUrl: (videoId) => `https://www.youtube.com/watch?v=${videoId}`,
+    };
+
+    await playPlaylistForeground({
+      resolver,
+      platform: fakePlatform(),
+      playlistRepo,
+      playlistName: 'focus',
+      onPlaylistFound: (playlist) => events.push(`found:${playlist.name}`),
+    });
+
+    assert.deepEqual(events, ['found:focus', 'download:a', 'download:b']);
   }),
 );
 
