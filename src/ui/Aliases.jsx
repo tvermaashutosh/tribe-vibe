@@ -148,7 +148,7 @@ export default function Aliases({ ctx, onBack }) {
   if (mode === 'artistName') {
     return (
       <Box flexDirection="column">
-        <Text>Canonical artist name:</Text>
+        <Text>Artist name:</Text>
         <TextInput value={nameInput} onChange={setNameInput} onSubmit={() => setMode('artistAliases')} />
       </Box>
     );
