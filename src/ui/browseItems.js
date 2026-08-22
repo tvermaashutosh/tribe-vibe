@@ -3,7 +3,7 @@
 import { sortByRecency } from './sortByRecency.js';
 
 // Every artist alias, song alias, and playlist, in one browsable list,
-// grouped song -> artist -> playlist (most-specific/most-likely-to-be-what-
+// grouped song -> playlist -> artist (most-specific/most-likely-to-be-what-
 // you-want first), and within each chunk most-recently-touched first —
 // playlist names live in the exact same flat token namespace as aliases
 // (TokenRegistry/assertValidToken already enforce that non-intersection), so
@@ -20,19 +20,19 @@ export function buildBrowseItems(aliasRepo, playlistRepo) {
     videoId: alias.videoId,
     title: alias.title,
   }));
+  const playlistItems = sortByRecency(playlistRepo.all()).map((playlist) => ({
+    itemType: 'playlist',
+    token: playlist.name,
+    label: `${playlist.name}  →  ${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}  (playlist)`,
+    playlistName: playlist.name,
+  }));
   const artistItems = sortByRecency(aliases.filter((alias) => alias.type === 'artist')).map((alias) => ({
     itemType: 'artist',
     token: alias.token,
     label: `${alias.token}  →  ${alias.value}  (artist)`,
     artistName: alias.value,
   }));
-  const playlistItems = sortByRecency(playlistRepo.all()).map((playlist) => ({
-    itemType: 'playlist',
-    token: playlist.name,
-    label: `${playlist.name}  (playlist, ${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'})`,
-    playlistName: playlist.name,
-  }));
-  return [...songItems, ...artistItems, ...playlistItems];
+  return [...songItems, ...playlistItems, ...artistItems];
 }
 
 // Selecting an item from the browse list plays it exactly as if you'd typed

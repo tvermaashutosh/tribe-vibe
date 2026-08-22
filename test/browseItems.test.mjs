@@ -10,7 +10,7 @@ function fakePlaylistRepo(playlists) {
   return { all: () => playlists };
 }
 
-test('buildBrowseItems combines artist aliases, song aliases, and playlists, grouped song -> artist -> playlist regardless of insertion order', () => {
+test('buildBrowseItems combines artist aliases, song aliases, and playlists, grouped song -> playlist -> artist regardless of insertion order', () => {
   const aliasRepo = fakeAliasRepo([
     // Artist listed first in storage — the output must still put songs first.
     { token: 'tsw', type: 'artist', value: 'Taylor Swift' },
@@ -23,10 +23,10 @@ test('buildBrowseItems combines artist aliases, song aliases, and playlists, gro
   assert.equal(items.length, 3);
   assert.equal(items[0].itemType, 'song');
   assert.match(items[0].label, /tt.*Taylor Swift - 22.*\(song\)/);
-  assert.equal(items[1].itemType, 'artist');
-  assert.match(items[1].label, /tsw.*Taylor Swift.*\(artist\)/);
-  assert.equal(items[2].itemType, 'playlist');
-  assert.match(items[2].label, /focus.*playlist, 1 song\)/);
+  assert.equal(items[1].itemType, 'playlist');
+  assert.match(items[1].label, /focus.*1 song.*\(playlist\)/);
+  assert.equal(items[2].itemType, 'artist');
+  assert.match(items[2].label, /tsw.*Taylor Swift.*\(artist\)/);
 });
 
 test('buildBrowseItems keeps all songs together before all artists, even when interleaved in storage', () => {
@@ -53,8 +53,8 @@ test('buildBrowseItems pluralizes "songs" correctly for a playlist with 0 or man
 
   const items = buildBrowseItems(aliasRepo, playlistRepo);
 
-  assert.match(items[0].label, /0 songs\)/);
-  assert.match(items[1].label, /2 songs\)/);
+  assert.match(items[0].label, /0 songs\s+\(playlist\)/);
+  assert.match(items[1].label, /2 songs\s+\(playlist\)/);
 });
 
 test('buildBrowseItems returns an empty list when there is nothing to browse', () => {
@@ -77,7 +77,7 @@ test('buildBrowseItems sorts each chunk most-recently-touched first, independent
 
   assert.deepEqual(
     items.map((item) => item.token),
-    ['s-new', 's-old', 'a-new', 'a-old', 'new-playlist', 'old-playlist'],
+    ['s-new', 's-old', 'new-playlist', 'old-playlist', 'a-new', 'a-old'],
   );
 });
 
