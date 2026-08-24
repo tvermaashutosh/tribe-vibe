@@ -13,7 +13,7 @@ import { theme } from './theme.js';
 // (theme.selected highlight, pointer indicator) matches ink-select-input's
 // own default exactly, so switching components here doesn't change how
 // anything looks.
-export default function SkipList({ items, onSelect }) {
+export default function SkipList({ items, onSelect, onHighlight }) {
   const [selectedIndex, setSelectedIndex] = useState(findFirstSelectable(items));
   const previousValues = useRef(items.map((item) => item.value).join('|'));
 
@@ -25,9 +25,18 @@ export default function SkipList({ items, onSelect }) {
     }
   }, [items]);
 
+  // Matches ink-select-input's own onHighlight: fires on arrow-key movement,
+  // before any selection is made — the hook screens use to clear a stale
+  // warning the moment you start navigating again, not just once you select
+  // something.
+  const moveTo = (nextIndex) => {
+    setSelectedIndex(nextIndex);
+    if (onHighlight) onHighlight(items[nextIndex]);
+  };
+
   useInput((input, key) => {
-    if (key.upArrow) setSelectedIndex((i) => moveSelection(items, i, -1));
-    if (key.downArrow) setSelectedIndex((i) => moveSelection(items, i, 1));
+    if (key.upArrow) moveTo(moveSelection(items, selectedIndex, -1));
+    if (key.downArrow) moveTo(moveSelection(items, selectedIndex, 1));
     if (key.return) {
       const item = items[selectedIndex];
       if (item && !item.divider) onSelect(item);
