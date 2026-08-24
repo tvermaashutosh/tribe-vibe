@@ -7,7 +7,6 @@ import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
-import { fitLine, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/truncateToWidth.js';
 import { theme } from './theme.js';
 
 // One screen for everything playlist-related: the list of existing playlists
@@ -57,12 +56,9 @@ export default function ManagePlaylists({ ctx, onBack }) {
   );
 
   if (mode === 'list') {
-    // Only the playlist name ever gets truncated — the song count is always
-    // short and shown in full — never wrapped onto a second row.
-    const listWidth = getTerminalWidth() - SELECTION_INDICATOR_WIDTH;
     const items = [
       ...playlists.map((playlist) => ({
-        label: fitLine('', playlist.name, `  (${playlist.songs.length} songs)`, listWidth),
+        label: `${playlist.name}  (${playlist.songs.length} songs)`,
         value: playlist.name,
       })),
       ...(playlists.length > 0 ? [DIVIDER_ITEM] : []),
@@ -111,12 +107,9 @@ export default function ManagePlaylists({ ctx, onBack }) {
   }
 
   if (mode === 'detail') {
-    // Only the song title ever gets truncated — the number is always short
-    // and shown in full — never wrapped onto a second row.
-    const detailWidth = getTerminalWidth() - SELECTION_INDICATOR_WIDTH;
     const items = [
       ...selectedPlaylist.songs.map((song, i) => ({
-        label: fitLine(`${i + 1}. `, song.title, '', detailWidth),
+        label: `${i + 1}. ${song.title}`,
         value: `song:${i}`,
       })),
       ...(selectedPlaylist.songs.length > 0 ? [DIVIDER_ITEM] : []),
