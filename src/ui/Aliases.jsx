@@ -58,7 +58,7 @@ export default function Aliases({ ctx, onBack }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold>Aliases</Text>
+        <Text bold color={theme.secondary}>Aliases</Text>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}
@@ -85,7 +85,7 @@ export default function Aliases({ ctx, onBack }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold>{selectedEntry.token}</Text>
+        <Text bold color={theme.secondary}>{selectedEntry.token}</Text>
         <Text color={theme.dim}>{selectedEntry.type === 'artist' ? selectedEntry.value : selectedEntry.title}</Text>
         <SelectInput
           items={items}
