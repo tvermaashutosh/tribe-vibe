@@ -134,7 +134,7 @@ export default function Play({ ctx, onBack }) {
   if (busy) {
     return (
       <Box flexDirection="column">
-        <Text bold>Play</Text>
+        <Text bold color={theme.secondary}>Play</Text>
         <Text color={theme.dim}>{status || 'Resolving...'}</Text>
       </Box>
     );
@@ -143,7 +143,7 @@ export default function Play({ ctx, onBack }) {
   if (!picking) {
     return (
       <Box flexDirection="column">
-        <Text bold>Play</Text>
+        <Text bold color={theme.secondary}>Play</Text>
         <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>
         <TextInput
           value={query}
