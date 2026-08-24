@@ -61,26 +61,15 @@ test('buildBrowseItems returns an empty list when there is nothing to browse', (
   assert.deepEqual(buildBrowseItems(fakeAliasRepo([]), fakePlaylistRepo([])), []);
 });
 
-test('buildBrowseItems truncates only the title/value, never the token or type, when a label would otherwise wrap', () => {
-  const originalColumns = process.stdout.columns;
-  Object.defineProperty(process.stdout, 'columns', { value: 30, configurable: true });
-  try {
-    const aliasRepo = fakeAliasRepo([
-      { token: 'tt', type: 'song', videoId: 'a', title: 'A very long song title that would definitely wrap' },
-      { token: 'ts', type: 'artist', value: 'A very long canonical artist name that would definitely wrap' },
-    ]);
-    const items = buildBrowseItems(aliasRepo, fakePlaylistRepo([]));
+test('buildBrowseItems keeps the title/value in full — Ink wraps a label onto another line rather than losing any of it', () => {
+  const aliasRepo = fakeAliasRepo([
+    { token: 'tt', type: 'song', videoId: 'a', title: 'A very long song title that would definitely wrap' },
+    { token: 'ts', type: 'artist', value: 'A very long canonical artist name that would definitely wrap' },
+  ]);
+  const items = buildBrowseItems(aliasRepo, fakePlaylistRepo([]));
 
-    for (const item of items) {
-      assert.ok(item.label.length <= 28, `expected within 28 columns (30 - 2 for the indicator), got ${item.label.length}: ${item.label}`);
-    }
-    assert.ok(items[0].label.startsWith('tt  →  '));
-    assert.ok(items[0].label.endsWith('  (song)'));
-    assert.ok(items[1].label.startsWith('ts  →  '));
-    assert.ok(items[1].label.endsWith('  (artist)'));
-  } finally {
-    Object.defineProperty(process.stdout, 'columns', { value: originalColumns, configurable: true });
-  }
+  assert.equal(items[0].label, 'tt  →  A very long song title that would definitely wrap  (song)');
+  assert.equal(items[1].label, 'ts  →  A very long canonical artist name that would definitely wrap  (artist)');
 });
 
 test('buildBrowseItems sorts each chunk most-recently-touched first, independent of storage order', () => {

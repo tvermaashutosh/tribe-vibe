@@ -1,7 +1,6 @@
 // Pulled out of Play.jsx, plain logic with no JSX, so it's testable without
 // needing a real TTY (Ink components can't be unit-tested here).
 import { sortByRecency } from './sortByRecency.js';
-import { fitLine, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/truncateToWidth.js';
 
 // Every artist alias, song alias, and playlist, in one browsable list,
 // grouped song -> playlist -> artist (most-specific/most-likely-to-be-what-
@@ -13,30 +12,27 @@ import { fitLine, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/tr
 // place they're shown alongside aliases, since it's a discovery aid for what
 // you can type, not a management screen.
 //
-// Every label is "token → value (type)" — the token and type are always
-// short and shown in full; only the value (a video title or canonical
-// artist name, the one thing that can genuinely run long) gets truncated to
-// fit the real terminal width, rather than ever wrapping onto a second row.
+// Every label is "token → value (type)" in full — Ink wraps it onto as many
+// lines as it needs when it doesn't fit, same as any other text in the app.
 export function buildBrowseItems(aliasRepo, playlistRepo) {
-  const width = getTerminalWidth() - SELECTION_INDICATOR_WIDTH;
   const aliases = aliasRepo.all();
   const songItems = sortByRecency(aliases.filter((alias) => alias.type === 'song')).map((alias) => ({
     itemType: 'song',
     token: alias.token,
-    label: fitLine(`${alias.token}  →  `, alias.title, '  (song)', width),
+    label: `${alias.token}  →  ${alias.title}  (song)`,
     videoId: alias.videoId,
     title: alias.title,
   }));
   const playlistItems = sortByRecency(playlistRepo.all()).map((playlist) => ({
     itemType: 'playlist',
     token: playlist.name,
-    label: fitLine(`${playlist.name}  →  `, `${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}`, '  (playlist)', width),
+    label: `${playlist.name}  →  ${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}  (playlist)`,
     playlistName: playlist.name,
   }));
   const artistItems = sortByRecency(aliases.filter((alias) => alias.type === 'artist')).map((alias) => ({
     itemType: 'artist',
     token: alias.token,
-    label: fitLine(`${alias.token}  →  `, alias.value, '  (artist)', width),
+    label: `${alias.token}  →  ${alias.value}  (artist)`,
     artistName: alias.value,
   }));
   return [...songItems, ...playlistItems, ...artistItems];
