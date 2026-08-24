@@ -107,7 +107,14 @@ export default function Picker({
     return (
       <Box flexDirection="column">
         <Text>Search: </Text>
-        <TextInput value={query} onChange={setQuery} onSubmit={() => setPhase('searching')} />
+        <TextInput
+          value={query}
+          onChange={(value) => {
+            setError(null);
+            setQuery(value);
+          }}
+          onSubmit={() => setPhase('searching')}
+        />
         {error && <Text color={theme.error}>✗ {error}</Text>}
       </Box>
     );
