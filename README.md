@@ -59,7 +59,7 @@ These control a background player, separate from a directly typed `tv <song>` �
 
 ## Data
 
-Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something within the same session doesn't re-download it — the cache directory itself is wiped clean at the start of every play session (the interactive menu, or a direct typed play), so it never accumulates across sessions. A hotkey command (`tv -pause` and friends) skips the wipe, since it never downloads anything itself. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
+Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something within the same session doesn't re-download it — the cache directory itself is wiped clean when a play session starts (the interactive menu, or a direct typed play), so it never accumulates across sessions. A hotkey command (`tv -pause` and friends) never triggers this, since it never downloads anything itself; and if another tv process is already mid-session, a second one simply skips the wipe rather than risk deleting files the first one is still using. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
 
 ## Known limitations
 
