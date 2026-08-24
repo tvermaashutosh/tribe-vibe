@@ -3,6 +3,7 @@ import { AliasRepository } from './repository/aliasRepository.js';
 import { PlaylistRepository } from './repository/playlistRepository.js';
 import { SettingsRepository } from './repository/settingsRepository.js';
 import { TokenRegistry } from './repository/tokenRegistry.js';
+import { clearCacheDir } from './repository/clearCacheDir.js';
 import { MpvDaemonSupervisor } from './player/mpvDaemonSupervisor.js';
 import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
@@ -20,6 +21,9 @@ import { trace } from './debugTrace.js';
 export async function run(argv) {
   const args = argv.slice(2);
   const platform = getPlatform();
+  // The audio cache has no eviction — wiped clean on every startup instead,
+  // so it never accumulates without bound across sessions.
+  clearCacheDir(platform);
   const aliasRepo = new AliasRepository(platform.getConfigDir());
   const playlistRepo = new PlaylistRepository(platform.getConfigDir());
   const settingsRepo = new SettingsRepository(platform.getConfigDir());
