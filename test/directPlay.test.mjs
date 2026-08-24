@@ -68,6 +68,23 @@ test(
 );
 
 test(
+  'playSongForeground passes the downloaded file\'s local path to onReady',
+  withFakeMpv(async () => {
+    let receivedPath = null;
+    await playSongForeground({
+      resolver: fakeResolver(),
+      platform: fakePlatform(),
+      videoId: 'abc123',
+      title: 'Some Song',
+      onReady: (localFile) => {
+        receivedPath = localFile;
+      },
+    });
+    assert.equal(receivedPath, '/cache/abc123.m4a');
+  }),
+);
+
+test(
   'playPlaylistForeground rejects a name that does not exist, or one with no songs — before ever calling onPlaylistFound or onReady',
   withFakeMpv(async () => {
     let foundCalled = false;
