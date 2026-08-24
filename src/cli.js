@@ -21,9 +21,17 @@ import { trace } from './debugTrace.js';
 export async function run(argv) {
   const args = argv.slice(2);
   const platform = getPlatform();
-  // The audio cache has no eviction — wiped clean on every startup instead,
-  // so it never accumulates without bound across sessions.
-  clearCacheDir(platform);
+  // A hotkey control command (-pause, -next, ...) never downloads or plays
+  // anything itself — it only sends an IPC command to an already-running
+  // background daemon. Computed once, up front, so the cache wipe below can
+  // skip it: firing the wipe here would race with a SEPARATE tv process's
+  // foreground playlist still mid-download (confirmed by reproducing it) —
+  // an already-cached-but-not-yet-opened file would vanish out from under
+  // it, since the wipe has no way to know a download elsewhere is in flight.
+  const isControlFlag = args.length === 1 && CONTROL_FLAGS.includes(args[0].replace(/^-+/, '').toLowerCase());
+  // The audio cache has no eviction — wiped clean at the start of every real
+  // play session instead, so it never accumulates without bound.
+  if (!isControlFlag) clearCacheDir(platform);
   const aliasRepo = new AliasRepository(platform.getConfigDir());
   const playlistRepo = new PlaylistRepository(platform.getConfigDir());
   const settingsRepo = new SettingsRepository(platform.getConfigDir());
@@ -74,7 +82,7 @@ export async function run(argv) {
   // matching tswift's own single-process model. Deliberately checked against
   // the real CONTROL_FLAGS list (not just "starts with -"), since -l/-loop is
   // also dash-prefixed but belongs to the play grammar below, not here.
-  if (args.length === 1 && CONTROL_FLAGS.includes(args[0].replace(/^-+/, '').toLowerCase())) {
+  if (isControlFlag) {
     const flag = args[0].replace(/^-+/, '').toLowerCase();
     await commands.execute({ type: flag });
     return closeAndExit();
