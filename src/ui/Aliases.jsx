@@ -65,6 +65,7 @@ export default function Aliases({ ctx, onBack }) {
         <Text bold>Aliases</Text>
         <SkipList
           items={items}
+          onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
             if (item.value === '__back__') return onBack();
@@ -94,6 +95,7 @@ export default function Aliases({ ctx, onBack }) {
         </Text>
         <SelectInput
           items={items}
+          onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
             if (item.value === '__back__') return setMode('list');
@@ -204,7 +206,10 @@ export default function Aliases({ ctx, onBack }) {
         <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>
         <TextInput
           value={songQuery}
-          onChange={setSongQuery}
+          onChange={(value) => {
+            setError(null);
+            setSongQuery(value);
+          }}
           onSubmit={() => {
             const intent = resolveTypedInput(songQuery, { aliasRepo: ctx.aliasRepo, playlistRepo: ctx.playlistRepo });
             setSongQuery('');
