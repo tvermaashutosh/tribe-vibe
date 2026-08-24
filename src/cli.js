@@ -9,7 +9,7 @@ import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
 import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
 import { formatPlaylistSongList } from './player/playlistSongList.js';
-import { formatNowPlaying } from './player/nowPlayingMessage.js';
+import { formatNowPlaying, formatNowPlayingPlaylist } from './player/nowPlayingMessage.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
@@ -127,7 +127,7 @@ export async function run(argv) {
       loop: intent.modifiers?.loop,
       onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
       onEmpty: () => console.log(`Playlist "${intent.playlistName}" has no songs yet — add some from the menu (\`tv\`) first.`),
-      onReady: () => console.log(`Now playing playlist: ${intent.playlistName}`),
+      onReady: () => console.log(formatNowPlayingPlaylist(intent.playlistName)),
     });
   } else if (intent.kind === 'search') {
     const { pickFromSearch } = await import('../dist/ui.js');
