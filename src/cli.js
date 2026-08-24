@@ -10,7 +10,6 @@ import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
 import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
 import { formatPlaylistSongList } from './player/playlistSongList.js';
-import { formatNowPlaying, formatNowPlayingPlaylist } from './player/nowPlayingMessage.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
@@ -127,7 +126,7 @@ async function runSession({ args, platform, isControlFlag }) {
       videoId: intent.videoId,
       title: intent.title,
       loop: intent.modifiers?.loop,
-      onReady: () => console.log(formatNowPlaying(intent.title)),
+      onReady: (localFile) => console.log(`Playing: ${localFile}`),
     });
   } else if (intent.kind === 'playlist') {
     console.log('Resolving...');
@@ -139,7 +138,6 @@ async function runSession({ args, platform, isControlFlag }) {
       loop: intent.modifiers?.loop,
       onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
       onEmpty: () => console.log(`Playlist "${intent.playlistName}" has no songs yet — add some from the menu (\`tv\`) first.`),
-      onReady: () => console.log(formatNowPlayingPlaylist(intent.playlistName)),
     });
   } else if (intent.kind === 'search') {
     const { pickFromSearch } = await import('../dist/ui.js');
@@ -160,7 +158,7 @@ async function runSession({ args, platform, isControlFlag }) {
         videoId: picked.videoId,
         title: picked.title,
         loop: intent.modifiers?.loop,
-        onReady: () => console.log(formatNowPlaying(picked.title)),
+        onReady: (localFile) => console.log(`Playing: ${localFile}`),
       });
     }
   }
