@@ -4,6 +4,7 @@ import { PlaylistRepository } from './repository/playlistRepository.js';
 import { SettingsRepository } from './repository/settingsRepository.js';
 import { TokenRegistry } from './repository/tokenRegistry.js';
 import { clearCacheDir } from './repository/clearCacheDir.js';
+import { acquireSessionLock, releaseSessionLock } from './repository/sessionLock.js';
 import { MpvDaemonSupervisor } from './player/mpvDaemonSupervisor.js';
 import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
@@ -23,15 +24,26 @@ export async function run(argv) {
   const platform = getPlatform();
   // A hotkey control command (-pause, -next, ...) never downloads or plays
   // anything itself — it only sends an IPC command to an already-running
-  // background daemon. Computed once, up front, so the cache wipe below can
-  // skip it: firing the wipe here would race with a SEPARATE tv process's
-  // foreground playlist still mid-download (confirmed by reproducing it) —
-  // an already-cached-but-not-yet-opened file would vanish out from under
-  // it, since the wipe has no way to know a download elsewhere is in flight.
+  // background daemon, so it never contends for the session lock below.
   const isControlFlag = args.length === 1 && CONTROL_FLAGS.includes(args[0].replace(/^-+/, '').toLowerCase());
-  // The audio cache has no eviction — wiped clean at the start of every real
-  // play session instead, so it never accumulates without bound.
-  if (!isControlFlag) clearCacheDir(platform);
+  // The audio cache has no eviction — wiped clean at the start of a real
+  // play session instead, so it never accumulates without bound. Gated by
+  // the session lock: wiping while ANOTHER tv process still has an
+  // in-progress playlist download, or is still playing back what it already
+  // downloaded, deletes files out from under it — confirmed by reproducing
+  // exactly that data loss with the real playPlaylistForeground and
+  // clearCacheDir. Only the process that wins the lock gets to wipe; every
+  // other one just skips it this time rather than risk someone else's files.
+  const holdsSessionLock = !isControlFlag && acquireSessionLock(platform);
+  if (holdsSessionLock) clearCacheDir(platform);
+  try {
+    return await runSession({ args, platform, isControlFlag });
+  } finally {
+    if (holdsSessionLock) releaseSessionLock(platform);
+  }
+}
+
+async function runSession({ args, platform, isControlFlag }) {
   const aliasRepo = new AliasRepository(platform.getConfigDir());
   const playlistRepo = new PlaylistRepository(platform.getConfigDir());
   const settingsRepo = new SettingsRepository(platform.getConfigDir());
