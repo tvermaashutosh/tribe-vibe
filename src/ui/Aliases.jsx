@@ -4,6 +4,7 @@ import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
+import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
 import { fitLine, truncateToWidth, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/truncateToWidth.js';
@@ -20,6 +21,8 @@ export default function Aliases({ ctx, onBack }) {
   const [nameInput, setNameInput] = useState('');
   const [aliasInput, setAliasInput] = useState('');
   const [pendingSong, setPendingSong] = useState(null);
+  const [songQuery, setSongQuery] = useState('');
+  const [pickerQuery, setPickerQuery] = useState('');
   // Only ever a validation message here (bad/duplicate token) — never a
   // success or a genuine system error, so it's always shown as a warning.
   // Every pure-navigation handler clears it first so it never lingers onto a
@@ -66,7 +69,7 @@ export default function Aliases({ ctx, onBack }) {
             setError(null);
             if (item.value === '__back__') return onBack();
             if (item.value === '__addArtist__') return setMode('artistName');
-            if (item.value === '__addSong__') return setMode('songSearch');
+            if (item.value === '__addSong__') return setMode('songSearchInput');
             setSelectedToken(item.value);
             return setMode('detail');
           }}
@@ -187,9 +190,55 @@ export default function Aliases({ ctx, onBack }) {
     );
   }
 
+  // The exact same single search box Play and playlist add/replace use — an
+  // artist alias, a song alias, both, plain free text, or -q/-query for a
+  // literal bypass all work identically. A deterministic song-alias match
+  // skips the picker entirely (it's already pinned, just needs a new
+  // token); anything else hands the resolved query to the picker pre-filled
+  // — so typing an artist alias here searches that artist's canonical name,
+  // not the raw token.
+  if (mode === 'songSearchInput') {
+    return (
+      <Box flexDirection="column">
+        <Text>Search for a song to alias:</Text>
+        <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>
+        <TextInput
+          value={songQuery}
+          onChange={setSongQuery}
+          onSubmit={() => {
+            const intent = resolveTypedInput(songQuery, { aliasRepo: ctx.aliasRepo, playlistRepo: ctx.playlistRepo });
+            setSongQuery('');
+            setError(null);
+
+            if (intent.kind === 'empty') {
+              setError('Nothing to search for.');
+              return;
+            }
+
+            if (intent.kind === 'playlist') {
+              setError(`"${songQuery.trim()}" resolves to a playlist, not a song.`);
+              return;
+            }
+
+            if (intent.kind === 'song') {
+              setPendingSong({ videoId: intent.videoId, title: intent.title });
+              setMode('songToken');
+              return;
+            }
+
+            setPickerQuery(intent.query);
+            setMode('songSearch');
+          }}
+        />
+        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+      </Box>
+    );
+  }
+
   if (mode === 'songSearch') {
     return (
       <Picker
+        initialQuery={pickerQuery}
         top={ctx.settings.top}
         resolver={ctx.resolver}
         player={ctx.player}
