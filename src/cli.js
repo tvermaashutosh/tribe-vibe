@@ -126,7 +126,7 @@ async function runSession({ args, platform, isControlFlag }) {
       videoId: intent.videoId,
       title: intent.title,
       loop: intent.modifiers?.loop,
-      onReady: (localFile) => console.log(`File: ${localFile}`),
+      onReady: (localFile) => console.log(`Playing: ${localFile}`),
     });
   } else if (intent.kind === 'playlist') {
     console.log('Resolving...');
@@ -158,7 +158,7 @@ async function runSession({ args, platform, isControlFlag }) {
         videoId: picked.videoId,
         title: picked.title,
         loop: intent.modifiers?.loop,
-        onReady: (localFile) => console.log(`File: ${localFile}`),
+        onReady: (localFile) => console.log(`Playing: ${localFile}`),
       });
     }
   }
