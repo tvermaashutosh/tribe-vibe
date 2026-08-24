@@ -31,7 +31,7 @@ test('global token uniqueness rejects collisions across artist/song/playlist', (
 
   aliasRepo.addArtistAlias(['ts'], 'Taylor Swift', tokenRegistry);
 
-  assert.throws(() => aliasRepo.addSongAlias('ts', 'xyz', 'Some Song', tokenRegistry), /already in use/);
+  assert.throws(() => aliasRepo.addSongAlias('ts', 'xyz', 'Some Song', tokenRegistry), /already taken as an artist alias/);
   assert.throws(() => playlistRepo.create('ts', tokenRegistry), /already in use/);
 });
 

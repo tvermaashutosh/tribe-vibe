@@ -65,8 +65,9 @@ export class AliasRepository {
     assertValidToken(newToken);
     const entry = this.aliases.find((alias) => alias.token.toLowerCase() === oldToken.toLowerCase());
     if (!entry) throw new Error(`No alias named "${oldToken}"`);
-    if (oldToken.toLowerCase() !== newToken.toLowerCase() && tokenRegistry.isTaken(newToken)) {
-      throw new Error(`"${newToken}" is already in use — pick a different alias or remove the existing one first`);
+    const takenAs = oldToken.toLowerCase() !== newToken.toLowerCase() ? tokenRegistry.describeTaken(newToken) : null;
+    if (takenAs) {
+      throw new Error(`"${newToken}" is already taken as ${takenAs} — pick a different alias or remove the existing one first`);
     }
     entry.token = newToken.toLowerCase();
     entry.updatedAt = Date.now();
@@ -91,8 +92,9 @@ export class AliasRepository {
   _assertAvailable(tokens, tokenRegistry) {
     for (const token of tokens) {
       assertValidToken(token);
-      if (tokenRegistry.isTaken(token)) {
-        throw new Error(`"${token}" is already in use — pick a different alias or remove the existing one first`);
+      const takenAs = tokenRegistry.describeTaken(token);
+      if (takenAs) {
+        throw new Error(`"${token}" is already taken as ${takenAs} — pick a different alias or remove the existing one first`);
       }
     }
   }
