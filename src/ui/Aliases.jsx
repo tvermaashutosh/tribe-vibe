@@ -7,7 +7,6 @@ import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
-import { fitLine, truncateToWidth, getTerminalWidth, SELECTION_INDICATOR_WIDTH } from '../text/truncateToWidth.js';
 import { theme } from './theme.js';
 
 // One screen for everything alias-related: the flat list of every existing
@@ -49,12 +48,9 @@ export default function Aliases({ ctx, onBack }) {
     // most-recently-touched first within each chunk.
     const songAliases = sortByRecency(aliases.filter((alias) => alias.type === 'song'));
     const artistAliases = sortByRecency(aliases.filter((alias) => alias.type === 'artist'));
-    // Only the title/value ever gets truncated — the token and type are
-    // always short and shown in full — never wrapped onto a second row.
-    const width = getTerminalWidth() - SELECTION_INDICATOR_WIDTH;
     const items = [
-      ...songAliases.map((alias) => ({ label: fitLine(`${alias.token}  →  `, alias.title, '  (song)', width), value: alias.token })),
-      ...artistAliases.map((alias) => ({ label: fitLine(`${alias.token}  →  `, alias.value, '  (artist)', width), value: alias.token })),
+      ...songAliases.map((alias) => ({ label: `${alias.token}  →  ${alias.title}  (song)`, value: alias.token })),
+      ...artistAliases.map((alias) => ({ label: `${alias.token}  →  ${alias.value}  (artist)`, value: alias.token })),
       ...(aliases.length > 0 ? [DIVIDER_ITEM] : []),
       { label: '+ New artist alias', value: '__addArtist__' },
       { label: '+ New song alias', value: '__addSong__' },
@@ -90,9 +86,7 @@ export default function Aliases({ ctx, onBack }) {
     return (
       <Box flexDirection="column">
         <Text bold>{selectedEntry.token}</Text>
-        <Text color={theme.dim}>
-          {truncateToWidth(selectedEntry.type === 'artist' ? selectedEntry.value : selectedEntry.title, getTerminalWidth())}
-        </Text>
+        <Text color={theme.dim}>{selectedEntry.type === 'artist' ? selectedEntry.value : selectedEntry.title}</Text>
         <SelectInput
           items={items}
           onHighlight={() => setError(null)}
