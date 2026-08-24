@@ -35,6 +35,22 @@ test('global token uniqueness rejects collisions across artist/song/playlist', (
   assert.throws(() => playlistRepo.create('ts', tokenRegistry), /already in use/);
 });
 
+test('describeTaken names the actual conflicting kind, not just "already in use"', () => {
+  const dir = tempConfigDir();
+  const aliasRepo = new AliasRepository(dir);
+  const playlistRepo = new PlaylistRepository(dir);
+  const tokenRegistry = new TokenRegistry(aliasRepo, playlistRepo);
+
+  aliasRepo.addArtistAlias(['ts'], 'Taylor Swift', tokenRegistry);
+  aliasRepo.addSongAlias('tt', 'abc123', 'Taylor Swift - 22', tokenRegistry);
+  playlistRepo.create('dl', tokenRegistry);
+
+  assert.equal(tokenRegistry.describeTaken('ts'), 'an artist alias');
+  assert.equal(tokenRegistry.describeTaken('tt'), 'a song alias');
+  assert.equal(tokenRegistry.describeTaken('dl'), 'a playlist name');
+  assert.equal(tokenRegistry.describeTaken('unused'), null);
+});
+
 test('song aliases are self-contained — no live parent-artist join needed', () => {
   const dir = tempConfigDir();
   const aliasRepo = new AliasRepository(dir);
