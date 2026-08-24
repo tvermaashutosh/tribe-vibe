@@ -5,7 +5,7 @@ import Picker from './Picker.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
-import { formatNowPlaying } from '../player/nowPlayingMessage.js';
+import { formatNowPlaying, formatNowPlayingPlaylist } from '../player/nowPlayingMessage.js';
 import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
 import { trace } from '../debugTrace.js';
@@ -99,7 +99,7 @@ export default function Play({ ctx, onBack }) {
           playlistName: intent.playlistName,
           loop: intent.modifiers?.loop,
           onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-          onReady: () => console.log(`Now playing playlist: ${intent.playlistName}`),
+          onReady: () => console.log(formatNowPlayingPlaylist(intent.playlistName)),
         }),
       );
       return;
