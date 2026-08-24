@@ -36,7 +36,7 @@ export default function Settings({ ctx, onBack }) {
     { label: 'ℹ About', value: '__about__' },
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
-    { label: '⇩ Export', value: '__export__' },
+    { label: '⇩ Export data', value: '__export__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
     { label: '‹ Back', value: '__back__' },
   ];
