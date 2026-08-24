@@ -81,6 +81,15 @@ export default function Play({ ctx, onBack }) {
     }
 
     if (intent.kind === 'playlist') {
+      // Checked here, before ever unmounting the menu — an empty playlist is
+      // nothing to play, not a reason to tear down the whole session and drop
+      // the user back to a shell prompt. Staying put also means they can just
+      // pick something else immediately, same as the plain "nothing typed" case.
+      const playlist = ctx.playlistRepo.all().find((entry) => entry.name === intent.playlistName);
+      if (playlist.songs.length === 0) {
+        setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some from Manage Playlists first.`);
+        return;
+      }
       setBusy(true);
       handOffToForeground(() =>
         playPlaylistForeground({
