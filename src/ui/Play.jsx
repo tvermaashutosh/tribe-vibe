@@ -87,7 +87,7 @@ export default function Play({ ctx, onBack }) {
       // pick something else immediately, same as the plain "nothing typed" case.
       const playlist = ctx.playlistRepo.all().find((entry) => entry.name === intent.playlistName);
       if (playlist.songs.length === 0) {
-        setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some from Manage Playlists first.`);
+        setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some from the Playlists section first.`);
         return;
       }
       setBusy(true);
