@@ -21,8 +21,9 @@ export class PlaylistRepository {
 
   create(name, tokenRegistry) {
     assertValidToken(name);
-    if (tokenRegistry.isTaken(name)) {
-      throw new Error(`"${name}" is already in use — pick a different name or remove the existing one first`);
+    const takenAs = tokenRegistry.describeTaken(name);
+    if (takenAs) {
+      throw new Error(`"${name}" is already taken as ${takenAs} — pick a different name or remove the existing one first`);
     }
     this.playlists.push({ name: name.toLowerCase(), songs: [], updatedAt: Date.now() });
     this._save();
@@ -31,8 +32,9 @@ export class PlaylistRepository {
   rename(oldName, newName, tokenRegistry) {
     assertValidToken(newName);
     const playlist = this._find(oldName);
-    if (oldName.toLowerCase() !== newName.toLowerCase() && tokenRegistry.isTaken(newName)) {
-      throw new Error(`"${newName}" is already in use — pick a different name or remove the existing one first`);
+    const takenAs = oldName.toLowerCase() !== newName.toLowerCase() ? tokenRegistry.describeTaken(newName) : null;
+    if (takenAs) {
+      throw new Error(`"${newName}" is already taken as ${takenAs} — pick a different name or remove the existing one first`);
     }
     playlist.name = newName.toLowerCase();
     playlist.updatedAt = Date.now();

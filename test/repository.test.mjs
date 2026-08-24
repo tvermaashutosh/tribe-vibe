@@ -32,7 +32,7 @@ test('global token uniqueness rejects collisions across artist/song/playlist', (
   aliasRepo.addArtistAlias(['ts'], 'Taylor Swift', tokenRegistry);
 
   assert.throws(() => aliasRepo.addSongAlias('ts', 'xyz', 'Some Song', tokenRegistry), /already taken as an artist alias/);
-  assert.throws(() => playlistRepo.create('ts', tokenRegistry), /already in use/);
+  assert.throws(() => playlistRepo.create('ts', tokenRegistry), /already taken as an artist alias/);
 });
 
 test('describeTaken names the actual conflicting kind, not just "already in use"', () => {
@@ -157,7 +157,7 @@ test('playlist name is its own alias — rename changes the invocable token, col
   assert.deepEqual(playlistRepo.resolveToken('FOCUS'), { type: 'playlist', name: 'focus' });
 
   playlistRepo.create('chill', tokenRegistry);
-  assert.throws(() => playlistRepo.rename('chill', 'focus', tokenRegistry), /already in use/);
+  assert.throws(() => playlistRepo.rename('chill', 'focus', tokenRegistry), /already taken as a playlist name/);
 
   playlistRepo.rename('focus', 'focusmix', tokenRegistry);
   assert.equal(playlistRepo.resolveToken('focus'), null);
