@@ -53,18 +53,17 @@ These control a background player, separate from a directly typed `tv <song>` �
 **Settings**:
 
 - **About** — writes a one-page, text-only PDF (`~/Downloads/tribe-vibe-about.pdf`) covering what tribe-vibe is, its low-level design, and the design patterns it uses.
-- **Export** — writes every alias and playlist to `~/Downloads/tribe-vibe-export.xlsx`.
+- **Export data** — writes every alias and playlist to `~/Downloads/tribe-vibe-export.xlsx`.
 - **Troubleshoot** — read-only checks for mpv/yt-dlp installation, available updates, and writable data directories, each with a suggested fix.
 - **Reset all data** — wipes aliases, playlists, settings, and the audio cache, after a yes/no confirmation that defaults to "no."
 
 ## Data
 
-Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something doesn't re-download it. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
+Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something within the same session doesn't re-download it — the cache directory itself is wiped clean at the start of every run, so it never accumulates across sessions. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
 
 ## Known limitations
 
 - A pinned song can go dead later (takedown, region lock) — you'll get a clear error and a chance to re-pick.
-- The audio cache has no eviction yet; it only grows.
 - A long playlist downloads every song, one at a time, before playback starts — the terminal sits idle until that finishes, since nothing plays until everything's ready.
 
 ## Testing
