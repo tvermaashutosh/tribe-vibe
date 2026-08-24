@@ -47,12 +47,13 @@ export default function SkipList({ items, onSelect, onHighlight }) {
     <Box flexDirection="column">
       {items.map((item, index) => {
         const isSelected = index === selectedIndex && !item.divider;
+        const labelColor = item.divider ? theme.dim : isSelected ? theme.selected : undefined;
         return (
           <Box key={item.value}>
             <Box marginRight={1}>
               <Text color={isSelected ? theme.selected : undefined}>{isSelected ? '❯' : ' '}</Text>
             </Box>
-            <Text color={isSelected ? theme.selected : undefined}>{item.label}</Text>
+            <Text color={labelColor}>{item.label}</Text>
           </Box>
         );
       })}
