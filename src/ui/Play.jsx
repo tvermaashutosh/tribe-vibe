@@ -5,7 +5,6 @@ import Picker from './Picker.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
-import { formatNowPlaying, formatNowPlayingPlaylist } from '../player/nowPlayingMessage.js';
 import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
 import { trace } from '../debugTrace.js';
@@ -74,7 +73,7 @@ export default function Play({ ctx, onBack }) {
           videoId: intent.videoId,
           title: intent.title,
           loop: intent.modifiers?.loop,
-          onReady: () => console.log(formatNowPlaying(intent.title)),
+          onReady: (localFile) => console.log(`Playing: ${localFile}`),
         }),
       );
       return;
@@ -99,7 +98,6 @@ export default function Play({ ctx, onBack }) {
           playlistName: intent.playlistName,
           loop: intent.modifiers?.loop,
           onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-          onReady: () => console.log(formatNowPlayingPlaylist(intent.playlistName)),
         }),
       );
       return;
@@ -196,7 +194,7 @@ export default function Play({ ctx, onBack }) {
             platform: ctx.platform,
             videoId: candidate.videoId,
             title: candidate.title,
-            onReady: () => console.log(formatNowPlaying(candidate.title)),
+            onReady: (localFile) => console.log(`Playing: ${localFile}`),
           }),
         );
       }}
