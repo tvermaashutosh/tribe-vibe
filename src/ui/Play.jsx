@@ -114,6 +114,8 @@ export default function Play({ ctx, onBack }) {
   // Picker's own listing navigation.
   useInput(
     (input, key) => {
+      if (!key.upArrow && !key.downArrow) return;
+      setStatus(null);
       if (key.upArrow) setBrowseIndex((i) => Math.max(0, i - 1));
       if (key.downArrow) setBrowseIndex((i) => Math.min(browseItems.length - 1, i + 1));
     },
@@ -136,7 +138,10 @@ export default function Play({ ctx, onBack }) {
         <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>
         <TextInput
           value={query}
-          onChange={setQuery}
+          onChange={(value) => {
+            setStatus(null);
+            setQuery(value);
+          }}
           onSubmit={() => {
             setStatus(null);
             // An empty box plays whatever's highlighted below instead of
