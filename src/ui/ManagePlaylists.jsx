@@ -67,7 +67,7 @@ export default function ManagePlaylists({ ctx, onBack }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold>Playlists</Text>
+        <Text bold color={theme.secondary}>Playlists</Text>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}
@@ -120,7 +120,7 @@ export default function ManagePlaylists({ ctx, onBack }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold>{selectedPlaylist.name}</Text>
+        <Text bold color={theme.secondary}>{selectedPlaylist.name}</Text>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}
@@ -180,7 +180,7 @@ export default function ManagePlaylists({ ctx, onBack }) {
   if (mode === 'songSearchInput') {
     return (
       <Box flexDirection="column">
-        <Text bold>{pendingAction === 'add' ? 'Add song' : 'Replace song'}</Text>
+        <Text bold color={theme.secondary}>{pendingAction === 'add' ? 'Add song' : 'Replace song'}</Text>
         <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>
         <TextInput
           value={songQuery}
