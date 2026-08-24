@@ -5,7 +5,6 @@ import SkipList from './SkipList.jsx';
 import { DIVIDER_ITEM } from './divider.js';
 import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import { theme } from './theme.js';
-import { truncateToWidth, getTerminalWidth } from '../text/truncateToWidth.js';
 
 // The shared Search -> List -> Listen -> Pick flow. Reused across several
 // call sites: an ambiguous free-text play (confirm = play now), song-alias
@@ -188,17 +187,12 @@ export default function Picker({
     <Box flexDirection="column">
       {results.length === 0 && <Text color={theme.warning}>⚠ No results found — press esc and try a different search.</Text>}
       {results.map((result, i) => {
-        // Never wrap onto a second row — a title that just barely overflows
-        // reads as stray blank-looking spacing rather than an obviously
-        // continued line. Truncated up front to the real terminal width
-        // instead.
         const prefix = i === index ? '❯ ' : '  ';
         const suffix = result.duration ? ` (${Math.round(result.duration)}s)` : '';
-        const title = truncateToWidth(result.title, Math.max(getTerminalWidth() - prefix.length - suffix.length, 0));
         return (
           <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
             {prefix}
-            {title}
+            {result.title}
             {suffix}
           </Text>
         );
