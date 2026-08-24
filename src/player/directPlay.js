@@ -26,10 +26,18 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // accurate moment to print what's queued up, not after the whole thing has
 // already downloaded and is about to play. onReady keeps its usual meaning:
 // fires right before mpv takes over the terminal.
-export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onReady }) {
+//
+// An empty playlist is nothing to play, not a system failure — it doesn't
+// deserve the same "tribe-vibe error:" + nonzero exit as a genuine crash.
+// onEmpty lets a caller handle it gracefully instead; a caller that doesn't
+// pass one keeps the old throw, so nothing that already relies on it breaks.
+export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onEmpty, onReady }) {
   const playlist = playlistRepo.all().find((entry) => entry.name === playlistName);
   if (!playlist) throw new Error(`No playlist named "${playlistName}"`);
-  if (playlist.songs.length === 0) throw new Error(`Playlist "${playlistName}" has no songs yet`);
+  if (playlist.songs.length === 0) {
+    if (onEmpty) return onEmpty(playlist);
+    throw new Error(`Playlist "${playlistName}" has no songs yet`);
+  }
 
   if (onPlaylistFound) onPlaylistFound(playlist);
 

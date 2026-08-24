@@ -110,6 +110,31 @@ test(
 );
 
 test(
+  'playPlaylistForeground calls onEmpty instead of throwing, when a caller opts in',
+  withFakeMpv(async () => {
+    let readyCalled = false;
+    let receivedPlaylist = null;
+    const playlistRepo = { all: () => [{ name: 'empty', songs: [] }] };
+
+    await playPlaylistForeground({
+      resolver: fakeResolver(),
+      platform: fakePlatform(),
+      playlistRepo,
+      playlistName: 'empty',
+      onEmpty: (playlist) => {
+        receivedPlaylist = playlist;
+      },
+      onReady: () => {
+        readyCalled = true;
+      },
+    });
+
+    assert.deepEqual(receivedPlaylist, { name: 'empty', songs: [] });
+    assert.equal(readyCalled, false);
+  }),
+);
+
+test(
   'playPlaylistForeground fires onPlaylistFound immediately, before any downloading starts',
   withFakeMpv(async () => {
     const events = [];
