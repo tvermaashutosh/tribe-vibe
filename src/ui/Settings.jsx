@@ -133,6 +133,7 @@ export default function Settings({ ctx, onBack }) {
       <Text bold>Settings</Text>
       <SelectInput
         items={items}
+        onHighlight={() => showStatus(null)}
         onSelect={async (item) => {
           showStatus(null);
           if (item.value === '__back__') return onBack();
