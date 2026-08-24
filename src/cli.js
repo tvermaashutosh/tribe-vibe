@@ -114,6 +114,7 @@ export async function run(argv) {
       playlistName: intent.playlistName,
       loop: intent.modifiers?.loop,
       onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
+      onEmpty: () => console.log(`Playlist "${intent.playlistName}" has no songs yet — add some from the menu (\`tv\`) first.`),
       onReady: () => console.log(`Now playing playlist: ${intent.playlistName}`),
     });
   } else if (intent.kind === 'search') {
