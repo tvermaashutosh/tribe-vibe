@@ -73,7 +73,7 @@ export default function Play({ ctx, onBack }) {
           videoId: intent.videoId,
           title: intent.title,
           loop: intent.modifiers?.loop,
-          onReady: (localFile) => console.log(`File: ${localFile}`),
+          onReady: (localFile) => console.log(`Playing: ${localFile}`),
         }),
       );
       return;
@@ -194,7 +194,7 @@ export default function Play({ ctx, onBack }) {
             platform: ctx.platform,
             videoId: candidate.videoId,
             title: candidate.title,
-            onReady: (localFile) => console.log(`File: ${localFile}`),
+            onReady: (localFile) => console.log(`Playing: ${localFile}`),
           }),
         );
       }}
