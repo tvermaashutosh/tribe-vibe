@@ -113,7 +113,7 @@ export default function Settings({ ctx, onBack }) {
   if (mode === 'troubleshoot') {
     return (
       <Box flexDirection="column">
-        <Text bold>Troubleshoot</Text>
+        <Text bold color={theme.secondary}>Troubleshoot</Text>
         {diagnostics === null && <Text color={theme.dim}>Running checks...</Text>}
         {diagnostics?.map((check) => (
           <Box flexDirection="column" key={check.name} marginBottom={1}>
@@ -130,7 +130,7 @@ export default function Settings({ ctx, onBack }) {
 
   return (
     <Box flexDirection="column">
-      <Text bold>Settings</Text>
+      <Text bold color={theme.secondary}>Settings</Text>
       <SelectInput
         items={items}
         onHighlight={() => showStatus(null)}
