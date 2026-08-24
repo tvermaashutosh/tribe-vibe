@@ -38,7 +38,7 @@ test('clearCacheDir never touches anything outside the cache dir it was given', 
   assert.ok(fs.existsSync(path.join(unrelatedDir, 'not-tribe-vibe.txt')));
 });
 
-test('clearCacheDir swallows a delete failure instead of throwing — runs unconditionally on every startup, must never block an actual play/control command', () => {
+test('clearCacheDir swallows a delete failure instead of throwing — routine housekeeping must never block an actual play', () => {
   const platform = {
     getCacheDir: () => {
       throw new Error('EBUSY: file is locked');
