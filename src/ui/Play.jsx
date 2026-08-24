@@ -163,7 +163,6 @@ export default function Play({ ctx, onBack }) {
             playIntent(resolveTypedInput(query, { aliasRepo: ctx.aliasRepo, playlistRepo: ctx.playlistRepo }));
           }}
         />
-        {status && <Text color={theme.warning}>⚠ {status}</Text>}
         <Text color={theme.dim}>{'─'.repeat(30)}</Text>
         {browseItems.length === 0 ? (
           <Text color={theme.dim}>No aliases or playlists yet.</Text>
@@ -178,6 +177,7 @@ export default function Play({ ctx, onBack }) {
             <Text color={theme.dim}>(↑/↓ browse · enter plays the highlighted one when the box is empty)</Text>
           </Box>
         )}
+        {status && <Text color={theme.warning}>⚠ {status}</Text>}
       </Box>
     );
   }
