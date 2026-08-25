@@ -60,7 +60,7 @@ export function checkWritableDir(name, dir) {
   }
 }
 
-async function checkMpv(platform) {
+export async function checkMpv(platform) {
   const versionResult = await run('mpv', ['--version']);
   if (versionResult.code === null) {
     return {
@@ -68,10 +68,32 @@ async function checkMpv(platform) {
       status: 'error',
       message: 'mpv is not installed, or not on PATH.',
       fix: platform.getInstallInstructions(),
+      missing: true,
     };
   }
   const firstLine = versionResult.stdout.split('\n')[0] || 'unknown version';
   return { name: 'mpv', status: 'success', message: `Found: ${firstLine}` };
+}
+
+// Distinct from mpv/yt-dlp: the app fully works without a hotkey daemon
+// (tv -pause still runs fine typed by hand), so this is a warning, not an
+// error — you just lose the ability to bind it to a physical key. Best-effort
+// on Windows: AutoHotkey's own installer doesn't reliably add it to PATH the
+// way scoop's shim convention does for everything else here, so a false
+// "not found" is possible there even on a real install.
+export async function checkHotkeyTool(platform) {
+  const toolName = platform.getHotkeyToolName();
+  const installs = findAllOnPath(toolName);
+  if (installs.length === 0) {
+    return {
+      name: toolName,
+      status: 'warning',
+      message: `${toolName} is not installed, or not on PATH — hotkeys (tv -pause and friends) won't be bindable to a key without it.`,
+      fix: platform.getInstallInstructions(),
+      missing: true,
+    };
+  }
+  return { name: toolName, status: 'success', message: `Found: ${installs[0]}` };
 }
 
 async function checkMpvDaemon(platform) {
@@ -89,6 +111,7 @@ export async function checkYtDlp(platform) {
       status: 'error',
       message: 'yt-dlp is not installed, or not on PATH.',
       fix: platform.getInstallInstructions(),
+      missing: true,
     };
   }
 
@@ -125,6 +148,7 @@ export async function runDiagnostics(platform) {
   return Promise.all([
     checkMpv(platform),
     checkYtDlp(platform),
+    checkHotkeyTool(platform),
     checkMpvDaemon(platform),
     checkWritableDir('Config directory', platform.getConfigDir()),
     checkWritableDir('Audio cache directory', platform.getCacheDir()),

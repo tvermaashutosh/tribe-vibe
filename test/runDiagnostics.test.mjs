@@ -3,7 +3,45 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { findAllOnPath, parseUpdateOutput, checkWritableDir, checkYtDlp } from '../src/diagnostics/runDiagnostics.js';
+import { findAllOnPath, parseUpdateOutput, checkWritableDir, checkYtDlp, checkHotkeyTool, checkMpv } from '../src/diagnostics/runDiagnostics.js';
+
+function withIsolatedPath(fn) {
+  return async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-hotkey-tool-'));
+    const originalPath = process.env.PATH;
+    process.env.PATH = dir;
+    try {
+      await fn(dir);
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  };
+}
+
+// The app fully works without a hotkey daemon (tv -pause still runs typed by
+// hand) — a missing one is a warning, not the error mpv/yt-dlp get, and it
+// still carries the same install command so a caller can offer to fix it.
+test(
+  'checkHotkeyTool warns (not errors) and names the install fix when the tool is missing',
+  withIsolatedPath(async () => {
+    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const result = await checkHotkeyTool(platform);
+    assert.equal(result.status, 'warning');
+    assert.equal(result.missing, true);
+    assert.equal(result.fix, 'brew install mpv yt-dlp skhd');
+  }),
+);
+
+test(
+  'checkHotkeyTool reports success and no missing flag when the tool is found',
+  withIsolatedPath(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'skhd'), '#!/bin/sh\n', { mode: 0o755 });
+    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const result = await checkHotkeyTool(platform);
+    assert.equal(result.status, 'success');
+    assert.equal(result.missing, undefined);
+  }),
+);
 
 test('findAllOnPath finds every matching binary across PATH, including duplicates', () => {
   const dirA = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-a-'));
@@ -101,6 +139,29 @@ test(
     const result = await checkYtDlp(windowsStylePlatform);
     assert.match(result.fix, /scoop update yt-dlp/);
     assert.doesNotMatch(result.fix, /brew/);
+  }),
+);
+
+// Distinct from the "outdated" or "multiple copies" warnings above — only a
+// genuinely absent binary sets `missing`, since a caller (setup.mjs) uses
+// this flag to decide whether reinstalling would actually fix anything.
+test(
+  'checkYtDlp flags missing:true only when yt-dlp is genuinely absent',
+  withIsolatedPath(async () => {
+    const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const result = await checkYtDlp(platform);
+    assert.equal(result.status, 'error');
+    assert.equal(result.missing, true);
+  }),
+);
+
+test(
+  'checkMpv flags missing:true when mpv is genuinely absent',
+  withIsolatedPath(async () => {
+    const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const result = await checkMpv(platform);
+    assert.equal(result.status, 'error');
+    assert.equal(result.missing, true);
   }),
 );
 
