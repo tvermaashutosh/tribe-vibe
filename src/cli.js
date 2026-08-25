@@ -10,6 +10,7 @@ import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
 import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
 import { formatPlaylistSongList } from './player/playlistSongList.js';
+import { formatCliStatus } from './ui/statusLevel.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
@@ -106,11 +107,11 @@ async function runSession({ args, platform, isControlFlag }) {
   const intent = resolveTypedInput(args.join(' '), { aliasRepo, playlistRepo });
 
   if (intent.kind === 'empty') {
-    console.log('Nothing to play — try `tv <song or artist>`.');
+    console.log(formatCliStatus('warning', 'Nothing to play — try a song, playlist, or artist alias.'));
     return closeAndExit();
   }
 
-  if (intent.note) console.log(intent.note);
+  if (intent.note) console.log(formatCliStatus('warning', intent.note));
 
   // Every direct play runs mpv attached to this terminal — the tswift model.
   // mpv owns its own bar (--term-osd-bar) and reads space/arrow keys straight
@@ -135,7 +136,7 @@ async function runSession({ args, platform, isControlFlag }) {
       playlistName: intent.playlistName,
       loop: intent.modifiers?.loop,
       onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-      onEmpty: () => console.log(`Playlist "${intent.playlistName}" has no songs yet — add some from the menu (\`tv\`) first.`),
+      onEmpty: () => console.log(formatCliStatus('warning', `Playlist "${intent.playlistName}" has no songs yet — add some songs to it first.`)),
     });
   } else if (intent.kind === 'search') {
     const { pickFromSearch } = await import('../dist/ui.js');
