@@ -5,17 +5,20 @@ import path from 'node:path';
 // YouTube's serving behavior for direct/streamed URLs shifts over time (which
 // player clients still get plain https URLs, which formats are offered) —
 // these are the failure signatures worth naming instead of dumping raw
-// yt-dlp stderr on the user.
-function enrichError(rawMessage, fallback) {
+// yt-dlp stderr on the user. Takes the config-hint path as a param rather
+// than hardcoding one — that path is OS-dependent (yt-dlp doesn't even look
+// at ~/.config on Windows), so the platform adapter is the one place that's
+// allowed to know it.
+function enrichError(rawMessage, fallback, ytDlpConfigHint) {
   const message = (rawMessage || '').trim() || fallback;
   if (/HTTP Error 403|Forbidden/i.test(message)) {
     return new Error(
-      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U\nCheck ~/.config/yt-dlp/config (player_client / remote-components) too.`,
+      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
     );
   }
   if (/Requested format is not available/i.test(message)) {
     return new Error(
-      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.\nCheck ~/.config/yt-dlp/config (player_client / remote-components) too.`,
+      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
     );
   }
   if (/timed out|timeout/i.test(message)) {
@@ -82,7 +85,7 @@ export class YoutubeResolver {
       });
       proc.on('close', (code) => {
         if (code !== 0) {
-          reject(enrichError(stderr, 'yt-dlp search failed'));
+          reject(enrichError(stderr, 'yt-dlp search failed', this.platform.getYtDlpConfigHint()));
           return;
         }
         const results = stdout
@@ -129,7 +132,7 @@ export class YoutubeResolver {
       });
       proc.on('close', (code) => {
         if (code !== 0) {
-          reject(enrichError(stderr, 'yt-dlp download failed'));
+          reject(enrichError(stderr, 'yt-dlp download failed', this.platform.getYtDlpConfigHint()));
           return;
         }
         const downloaded = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));

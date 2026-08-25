@@ -10,7 +10,10 @@ function tempCacheDir() {
 }
 
 function fakePlatform() {
-  return { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+  return {
+    getInstallInstructions: () => 'brew install mpv yt-dlp skhd',
+    getYtDlpConfigHint: () => '~/.config/yt-dlp/config',
+  };
 }
 
 test('downloadAudio returns an already-cached file without shelling out again', async () => {
@@ -153,5 +156,21 @@ test(
     const cacheDir = tempCacheDir();
     const resolver = new YoutubeResolver(fakePlatform());
     await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /Check ~\/\.config\/yt-dlp\/config \(player_client \/ remote-components\)/);
+  }),
+);
+
+// Locks in that the hint text actually comes from the platform adapter, not
+// a hardcoded Unix path — yt-dlp doesn't even check ~/.config on Windows, so
+// a fake platform standing in for it must be reflected verbatim here.
+test(
+  'downloadAudio uses whatever config hint the platform adapter gives it, not a hardcoded one',
+  withFailingYtdlp('ERROR: unable to download video data: HTTP Error 403: Forbidden')(async () => {
+    const cacheDir = tempCacheDir();
+    const windowsStylePlatform = {
+      getInstallInstructions: () => 'scoop install mpv yt-dlp autohotkey',
+      getYtDlpConfigHint: () => '%APPDATA%\\yt-dlp\\config',
+    };
+    const resolver = new YoutubeResolver(windowsStylePlatform);
+    await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /Check %APPDATA%\\yt-dlp\\config \(player_client/);
   }),
 );
