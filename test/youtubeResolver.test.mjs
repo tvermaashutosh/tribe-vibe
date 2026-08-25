@@ -75,40 +75,9 @@ test(
   }),
 );
 
-// --socket-timeout only catches a fully stalled connection (no data at all)
-// — it does nothing for one that's still trickling in, just very slowly,
-// which was confirmed live to take well over a minute on its own. This is
-// the actual fix for that: a hard ceiling on the whole process, regardless
-// of why it's slow. processTimeoutMs is overridden here (a real test can't
-// wait out the real 90s default) with a fake yt-dlp that never exits on its
-// own, proving the process actually gets killed once the ceiling is hit.
-function withFakeYtdlpThatNeverExits(fn) {
-  return async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-ytdlp-hang-'));
-    fs.writeFileSync(path.join(dir, 'yt-dlp'), '#!/bin/sh\nsleep 300\n', { mode: 0o755 });
-    const originalPath = process.env.PATH;
-    process.env.PATH = `${dir}:${originalPath}`;
-    try {
-      await fn();
-    } finally {
-      process.env.PATH = originalPath;
-    }
-  };
-}
-
-test(
-  'search rejects with a clear timeout error instead of hanging when yt-dlp never exits',
-  withFakeYtdlpThatNeverExits(async () => {
-    const resolver = new YoutubeResolver({ processTimeoutMs: 100 });
-    await assert.rejects(() => resolver.search('some query', 5), /timed out after 0\.1s/);
-  }),
-);
-
-test(
-  'downloadAudio rejects with a clear timeout error instead of hanging when yt-dlp never exits',
-  withFakeYtdlpThatNeverExits(async () => {
-    const cacheDir = tempCacheDir();
-    const resolver = new YoutubeResolver({ processTimeoutMs: 100 });
-    await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /timed out after 0\.1s/);
-  }),
-);
+// Deliberately no flat wall-clock ceiling on the whole process — an earlier
+// version of this fix added one, and it broke long songs, since a bigger
+// file genuinely takes longer to transfer even on a healthy connection.
+// --socket-timeout/--retries above are the correct, size-agnostic bound:
+// they only fire when bytes actually stop arriving, so a slow-but-flowing
+// download for a 1-hour compilation is never mistaken for a stall.
