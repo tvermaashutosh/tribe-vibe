@@ -45,8 +45,19 @@ const NETWORK_TIMEOUT_ARGS = ['--socket-timeout', '10', '--retries', '3', '--fra
 // assume that — a SoundCloud or local-file resolver could implement the same
 // methods and swap in without touching the pipeline, commands, or UI.
 export class YoutubeResolver {
+  constructor(platform) {
+    this.platform = platform;
+  }
+
   toWatchUrl(videoId) {
     return `https://www.youtube.com/watch?v=${videoId}`;
+  }
+
+  // tswift's own dependency check names the exact install command for every
+  // missing tool, not just "is it installed?" — this matches that for the
+  // one binary this class depends on.
+  missingBinaryError(err) {
+    return new Error(`yt-dlp is not available — is it installed? (${err.message}) Try: ${this.platform.getInstallInstructions()}`);
   }
 
   search(query, top) {
@@ -67,7 +78,7 @@ export class YoutubeResolver {
         stderr += chunk;
       });
       proc.on('error', (err) => {
-        reject(new Error(`yt-dlp is not available — is it installed? (${err.message})`));
+        reject(this.missingBinaryError(err));
       });
       proc.on('close', (code) => {
         if (code !== 0) {
@@ -114,7 +125,7 @@ export class YoutubeResolver {
         stderr += chunk;
       });
       proc.on('error', (err) => {
-        reject(new Error(`yt-dlp is not available — is it installed? (${err.message})`));
+        reject(this.missingBinaryError(err));
       });
       proc.on('close', (code) => {
         if (code !== 0) {

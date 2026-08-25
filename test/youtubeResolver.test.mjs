@@ -9,19 +9,23 @@ function tempCacheDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-cache-test-'));
 }
 
+function fakePlatform() {
+  return { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+}
+
 test('downloadAudio returns an already-cached file without shelling out again', async () => {
   const cacheDir = tempCacheDir();
   const cachedPath = path.join(cacheDir, 'abc123.m4a');
   fs.writeFileSync(cachedPath, 'fake audio bytes');
 
-  const resolver = new YoutubeResolver();
+  const resolver = new YoutubeResolver(fakePlatform());
   const result = await resolver.downloadAudio('abc123', cacheDir);
 
   assert.equal(result, cachedPath);
 });
 
 test('toWatchUrl builds a plain YouTube watch URL', () => {
-  const resolver = new YoutubeResolver();
+  const resolver = new YoutubeResolver(fakePlatform());
   assert.equal(resolver.toWatchUrl('abc123'), 'https://www.youtube.com/watch?v=abc123');
 });
 
@@ -50,7 +54,7 @@ function withFakeYtdlpCapturingArgv(fn) {
 test(
   'search bounds every attempt instead of trusting yt-dlp\'s own retry/timeout defaults',
   withFakeYtdlpCapturingArgv(async (argvFile) => {
-    const resolver = new YoutubeResolver();
+    const resolver = new YoutubeResolver(fakePlatform());
     await resolver.search('some query', 5);
     const argv = fs.readFileSync(argvFile, 'utf8');
     assert.match(argv, /--socket-timeout 10/);
@@ -66,7 +70,7 @@ test(
     // The fake script above doesn't actually write a file, so downloadAudio
     // will reject after checking — that's fine, we only care about the argv
     // it was invoked with before that happens.
-    const resolver = new YoutubeResolver();
+    const resolver = new YoutubeResolver(fakePlatform());
     await resolver.downloadAudio('abc123', cacheDir).catch(() => {});
     const argv = fs.readFileSync(argvFile, 'utf8');
     assert.match(argv, /--socket-timeout 10/);
@@ -81,3 +85,38 @@ test(
 // --socket-timeout/--retries above are the correct, size-agnostic bound:
 // they only fire when bytes actually stop arriving, so a slow-but-flowing
 // download for a 1-hour compilation is never mistaken for a stall.
+
+// tswift's own dependency check names the exact install command for every
+// missing tool ("Install it: sudo apt install $cmd"), not just "is it
+// installed?" — this locks in the same for the one binary this class needs.
+function withMissingYtdlp(fn) {
+  return async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-no-ytdlp-'));
+    // An empty PATH entry with nothing named yt-dlp in it — spawn() will
+    // fail with ENOENT, exactly like a genuinely missing binary would.
+    const originalPath = process.env.PATH;
+    process.env.PATH = dir;
+    try {
+      await fn();
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  };
+}
+
+test(
+  'search names the exact install command when yt-dlp is missing',
+  withMissingYtdlp(async () => {
+    const resolver = new YoutubeResolver(fakePlatform());
+    await assert.rejects(() => resolver.search('some query', 5), /yt-dlp is not available.*Try: brew install mpv yt-dlp skhd/s);
+  }),
+);
+
+test(
+  'downloadAudio names the exact install command when yt-dlp is missing',
+  withMissingYtdlp(async () => {
+    const cacheDir = tempCacheDir();
+    const resolver = new YoutubeResolver(fakePlatform());
+    await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /yt-dlp is not available.*Try: brew install mpv yt-dlp skhd/s);
+  }),
+);
