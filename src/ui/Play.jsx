@@ -55,7 +55,7 @@ export default function Play({ ctx, onBack }) {
       process.exit(0);
     } catch (err) {
       trace(`handOffToForeground: caught error: ${err.message}`);
-      console.error(formatCliStatus('error', `tribe-vibe error: ${err.message}`));
+      console.error(formatCliStatus('error', `tv error: ${err.message}`));
       process.exit(1);
     }
   };
