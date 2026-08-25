@@ -29,8 +29,12 @@ export class MacPlatform {
     return bindings.map(({ key, flag }) => `${key} : tv -${flag}`).join('\n');
   }
 
+  // skhd isn't in homebrew-core (confirmed live: `brew search skhd` finds
+  // nothing there at all) — it only lives in its author's own tap. The
+  // fully-qualified name below auto-taps koekeishiya/formulae on install, no
+  // separate `brew tap` step needed first — confirmed the same way.
   getInstallInstructions() {
-    return 'brew install mpv yt-dlp skhd';
+    return 'brew install mpv yt-dlp koekeishiya/formulae/skhd';
   }
 
   getYtDlpUpgradeInstructions() {
