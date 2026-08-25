@@ -60,6 +60,8 @@ cmd + alt - n : tv -next
 
 These control a background player, separate from a directly typed `tv <song>` — they have nothing to act on while a direct play is running.
 
+**`tv -kill`** — stops every mpv process tribe-vibe itself has ever spawned: the background daemon, and any foreground play, including one left orphaned (some terminal media players, mpv included, deliberately ignore SIGHUP so closing the window doesn't kill playback — that can leave a foreground `-loop`ing play running indefinitely with no controlling terminal and no way back in). Unlike the hotkey flags above, this never touches the daemon/IPC connection itself, so it works even when that's the thing broken.
+
 **Menu** (`tv`, no args) — manage artist aliases, song aliases, and playlists. Every alias is picked from search results and pinned by its actual video ID, so it never drifts if search rankings change later. Playlist names share the same namespace as aliases — no separate list to remember, and both the alias list and the `Play` screen's browse list are grouped song → artist → playlist, most-recently-touched first.
 
 **Settings**:
