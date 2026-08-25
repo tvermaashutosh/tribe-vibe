@@ -7,6 +7,7 @@ import { playSongForeground, playPlaylistForeground } from '../player/directPlay
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
 import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
+import { formatCliStatus } from './statusLevel.js';
 import { trace } from '../debugTrace.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
@@ -54,7 +55,7 @@ export default function Play({ ctx, onBack }) {
       process.exit(0);
     } catch (err) {
       trace(`handOffToForeground: caught error: ${err.message}`);
-      console.error(`tribe-vibe error: ${err.message}`);
+      console.error(formatCliStatus('error', `tribe-vibe error: ${err.message}`));
       process.exit(1);
     }
   };
@@ -64,7 +65,7 @@ export default function Play({ ctx, onBack }) {
   // from the list plays exactly the way typing its token would.
   const playIntent = (intent) => {
     if (intent.kind === 'empty') {
-      setStatus('Nothing to play.');
+      setStatus('Nothing to play — try a song, playlist, or artist alias.');
       return;
     }
     if (intent.note) setStatus(intent.note);
@@ -91,7 +92,7 @@ export default function Play({ ctx, onBack }) {
       // pick something else immediately, same as the plain "nothing typed" case.
       const playlist = ctx.playlistRepo.all().find((entry) => entry.name === intent.playlistName);
       if (playlist.songs.length === 0) {
-        setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some from the Playlists section first.`);
+        setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some songs to it first.`);
         return;
       }
       setBusy(true);
