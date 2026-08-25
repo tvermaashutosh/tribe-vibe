@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractLoopFlag } from '../src/pipeline/flags.js';
+import { extractLoopFlag, extractLiteralQueryFlag } from '../src/pipeline/flags.js';
 
 test('extracts -loop and -l with a value, case-insensitively', () => {
   assert.deepEqual(extractLoopFlag(['-loop=10', 'foo', 'bar']), { loop: '10', remaining: ['foo', 'bar'] });
@@ -34,4 +34,15 @@ test('nothing is extracted, and loop stays undefined, when the flag is absent', 
 
 test('a plain word "loop" or "loop=10" (no dash) is not the flag — it stays in remaining', () => {
   assert.deepEqual(extractLoopFlag(['loop', 'loop=10', 'foo']), { loop: undefined, remaining: ['loop', 'loop=10', 'foo'] });
+});
+
+test('extractLiteralQueryFlag finds -q/-query anywhere, case-insensitively, single or double dash', () => {
+  assert.deepEqual(extractLiteralQueryFlag(['-q', 'foo', 'bar']), { literal: true, remaining: ['foo', 'bar'] });
+  assert.deepEqual(extractLiteralQueryFlag(['foo', '-query', 'bar']), { literal: true, remaining: ['foo', 'bar'] });
+  assert.deepEqual(extractLiteralQueryFlag(['foo', 'bar', '-Q']), { literal: true, remaining: ['foo', 'bar'] });
+  assert.deepEqual(extractLiteralQueryFlag(['foo', '--query', 'bar']), { literal: true, remaining: ['foo', 'bar'] });
+});
+
+test('extractLiteralQueryFlag: literal stays false, nothing removed, when the flag is absent', () => {
+  assert.deepEqual(extractLiteralQueryFlag(['foo', 'bar']), { literal: false, remaining: ['foo', 'bar'] });
 });
