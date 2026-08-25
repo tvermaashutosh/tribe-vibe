@@ -9,5 +9,7 @@ test('platform factory returns an adapter matching the current OS', () => {
   assert.equal(typeof platform.getDownloadsDir(), 'string');
   assert.equal(typeof platform.getCacheDir(), 'string');
   assert.equal(typeof platform.getInstallInstructions(), 'string');
+  assert.equal(typeof platform.getYtDlpUpgradeInstructions(), 'string');
+  assert.equal(typeof platform.getYtDlpConfigHint(), 'string');
   assert.equal(typeof platform.generateHotkeyConfig([{ key: 'cmd+alt+p', flag: 'pause' }]), 'string');
 });

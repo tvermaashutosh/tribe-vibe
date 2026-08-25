@@ -34,4 +34,15 @@ export class WindowsPlatform {
   getInstallInstructions() {
     return 'scoop install mpv yt-dlp autohotkey';
   }
+
+  getYtDlpUpgradeInstructions() {
+    return 'scoop update yt-dlp';
+  }
+
+  // yt-dlp's own recommended user-config location per OS (its README lists
+  // several accepted paths; this is the one it recommends on this platform —
+  // %APPDATA%, not ~/.config, which yt-dlp doesn't check here at all).
+  getYtDlpConfigHint() {
+    return '%APPDATA%\\yt-dlp\\config';
+  }
 }

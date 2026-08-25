@@ -32,4 +32,14 @@ export class LinuxPlatform {
   getInstallInstructions() {
     return 'sudo apt install mpv yt-dlp sxhkd';
   }
+
+  getYtDlpUpgradeInstructions() {
+    return 'sudo apt install --only-upgrade yt-dlp';
+  }
+
+  // yt-dlp's own recommended user-config location per OS (its README lists
+  // several accepted paths; this is the one it recommends on this platform).
+  getYtDlpConfigHint() {
+    return '~/.config/yt-dlp/config';
+  }
 }

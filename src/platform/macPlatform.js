@@ -32,4 +32,14 @@ export class MacPlatform {
   getInstallInstructions() {
     return 'brew install mpv yt-dlp skhd';
   }
+
+  getYtDlpUpgradeInstructions() {
+    return 'brew upgrade yt-dlp';
+  }
+
+  // yt-dlp's own recommended user-config location per OS (its README lists
+  // several accepted paths; this is the one it recommends on this platform).
+  getYtDlpConfigHint() {
+    return '~/.config/yt-dlp/config';
+  }
 }
