@@ -14,8 +14,32 @@ import { formatCliStatus } from './ui/statusLevel.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
-import { CONTROL_FLAGS } from './constants.js';
+import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
 import { trace } from './debugTrace.js';
+
+// Matches tswift's own `trap cleanup EXIT INT TERM` — releases the session
+// lock the instant an external signal arrives, rather than only in the
+// finally block below, which an abrupt kill can skip straight past entirely
+// (Node's default disposition for an unhandled signal is immediate
+// termination with zero cleanup). Confirmed live, twice: a killed test
+// process left its lock stuck for the full staleness window before this
+// existed.
+//
+// Deliberately does NOT call process.exit() itself. Whatever's actually
+// running when the signal arrives — mpv, or yt-dlp mid-download — shares
+// this process's group and receives the very same signal independently;
+// letting its own death naturally drive this process's already-correct
+// exit path (through whichever await it was blocking) avoids racing
+// playForeground.js's own post-mpv-exit handling, which is deliberately
+// inert while mpv still owns the terminal for exactly this reason.
+function guardSessionLock(platform) {
+  const onSignal = () => releaseSessionLock(platform);
+  const signals = Object.keys(SIGNAL_EXIT_CODES);
+  for (const signal of signals) process.on(signal, onSignal);
+  return () => {
+    for (const signal of signals) process.removeListener(signal, onSignal);
+  };
+}
 
 // Facade: this is the one entry point everything else hangs off of. It stays
 // a thin orchestrator on purpose — no business logic lives here, only wiring.
@@ -36,9 +60,11 @@ export async function run(argv) {
   // other one just skips it this time rather than risk someone else's files.
   const holdsSessionLock = !isControlFlag && acquireSessionLock(platform);
   if (holdsSessionLock) clearCacheDir(platform);
+  const unguardLock = holdsSessionLock ? guardSessionLock(platform) : () => {};
   try {
     return await runSession({ args, platform, isControlFlag });
   } finally {
+    unguardLock();
     if (holdsSessionLock) releaseSessionLock(platform);
   }
 }
@@ -55,7 +81,7 @@ async function runSession({ args, platform, isControlFlag }) {
   await ipc.connect();
 
   const player = new Player(ipc);
-  const resolver = new YoutubeResolver();
+  const resolver = new YoutubeResolver(platform);
   const commands = createCommandRegistry({ player });
 
   const closeAndExit = () => {
