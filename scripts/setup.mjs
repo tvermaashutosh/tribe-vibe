@@ -26,10 +26,7 @@ function runInstallCommand(fullCommand) {
 }
 
 async function main() {
-  // Single-dash, matching tv's own flag convention (-pause, -loop, -q) —
-  // nothing here needs the double-dash GNU-long-flag style tv itself only
-  // accepts for compatibility with tswift's own --loop.
-  const installDeps = process.argv.includes('-install-deps');
+  const installDeps = process.argv.includes('--install-deps');
   const platform = getPlatform();
 
   console.log(formatCliStatus('success', 'Installing npm packages...'));
@@ -64,7 +61,7 @@ async function main() {
   if (!installDeps) {
     console.log(formatCliStatus('warning', `\nMissing: ${missing.map((result) => result.name).join(', ')}`));
     console.log(`Run: ${installCommand}`);
-    console.log('(or re-run this with -install-deps to have it run that for you)');
+    console.log('(or re-run this with --install-deps to have it run that for you)');
     return;
   }
 
