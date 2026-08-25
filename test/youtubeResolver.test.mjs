@@ -120,3 +120,38 @@ test(
     await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /yt-dlp is not available.*Try: brew install mpv yt-dlp skhd/s);
   }),
 );
+
+// tswift's own remediation for exactly these two failures points at the same
+// config file ("Check ~/.config/yt-dlp/config (player_client / remote-components)")
+// alongside its yt-dlp -U / -F advice — matching that here too.
+function withFailingYtdlp(stderrText) {
+  return (fn) => async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-failing-ytdlp-'));
+    fs.writeFileSync(path.join(dir, 'yt-dlp'), `#!/bin/sh\necho "${stderrText}" >&2\nexit 1\n`, { mode: 0o755 });
+    const originalPath = process.env.PATH;
+    process.env.PATH = `${dir}:${originalPath}`;
+    try {
+      await fn();
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  };
+}
+
+test(
+  'downloadAudio points at ~/.config/yt-dlp/config on a 403',
+  withFailingYtdlp('ERROR: unable to download video data: HTTP Error 403: Forbidden')(async () => {
+    const cacheDir = tempCacheDir();
+    const resolver = new YoutubeResolver(fakePlatform());
+    await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /Check ~\/\.config\/yt-dlp\/config \(player_client \/ remote-components\)/);
+  }),
+);
+
+test(
+  'downloadAudio points at ~/.config/yt-dlp/config when the requested format is not available',
+  withFailingYtdlp('ERROR: Requested format is not available')(async () => {
+    const cacheDir = tempCacheDir();
+    const resolver = new YoutubeResolver(fakePlatform());
+    await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /Check ~\/\.config\/yt-dlp\/config \(player_client \/ remote-components\)/);
+  }),
+);

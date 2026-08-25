@@ -10,12 +10,12 @@ function enrichError(rawMessage, fallback) {
   const message = (rawMessage || '').trim() || fallback;
   if (/HTTP Error 403|Forbidden/i.test(message)) {
     return new Error(
-      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U`,
+      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U\nCheck ~/.config/yt-dlp/config (player_client / remote-components) too.`,
     );
   }
   if (/Requested format is not available/i.test(message)) {
     return new Error(
-      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.`,
+      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.\nCheck ~/.config/yt-dlp/config (player_client / remote-components) too.`,
     );
   }
   if (/timed out|timeout/i.test(message)) {
