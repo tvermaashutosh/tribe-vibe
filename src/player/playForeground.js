@@ -1,6 +1,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { trace } from '../debugTrace.js';
 import { SIGNAL_EXIT_CODES } from '../constants.js';
+import { recordMpvPid, removeMpvPid } from '../repository/mpvPidRegistry.js';
 
 // Guards only the window between "mpv just exited" and this process's own
 // controlled exit — confirmed by tracing a real hang that this process can
@@ -77,6 +78,12 @@ export function playForeground({ files, loop, platform }) {
   trace(`playForeground: spawning mpv, args=${JSON.stringify(args)}`);
   return new Promise((resolve, reject) => {
     const child = spawn('mpv', args, { stdio: 'inherit' });
+    // Recorded so `tv -kill` can find this process later even if it outlives
+    // this one — mpv is known to survive its own terminal closing (some
+    // terminal media players deliberately ignore SIGHUP so an accidental
+    // window close doesn't kill playback), which orphans it with no
+    // controlling terminal and no way back in short of a real PID.
+    if (platform) recordMpvPid(platform, child.pid);
     child.once('error', (err) => {
       trace(`playForeground: mpv spawn error: ${err.message}`);
       // tswift's own dependency check names the exact install command for
@@ -85,6 +92,7 @@ export function playForeground({ files, loop, platform }) {
     });
     child.once('exit', (code, signal) => {
       trace(`playForeground: mpv exited code=${code} signal=${signal}, calling restoreTerminal()`);
+      if (platform) removeMpvPid(platform, child.pid);
       const unguard = guardVulnerableWindow();
       const finish = () => {
         unguard();
