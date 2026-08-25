@@ -38,7 +38,7 @@ npm link
 tv tsw tt -loop=10        # any order works, and so does -loop=10 tsw tt
 tv focus                  # play a playlist by name
 tv some vague lyrics      # no alias match -> opens a picker to disambiguate
-tv -q "literal search"    # bypass alias matching entirely
+tv -q "literal search"    # bypass alias matching entirely — anywhere on the line, same as -loop
 ```
 
 Nothing is reserved except your own alias/playlist names — `-l`/`-loop` and `-q`/`-query` are real flags, not blocked words, so a song actually titled "loop" still types as itself. Volume is mpv's own; tribe-vibe doesn't set or remember it.
