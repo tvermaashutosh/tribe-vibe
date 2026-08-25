@@ -81,7 +81,7 @@ async function checkMpvDaemon(platform) {
     : { name: 'mpv daemon', status: 'success', message: 'Not running yet — starts automatically the first time you play something.' };
 }
 
-async function checkYtDlp(platform) {
+export async function checkYtDlp(platform) {
   const installs = findAllOnPath('yt-dlp');
   if (installs.length === 0) {
     return {
@@ -113,7 +113,7 @@ async function checkYtDlp(platform) {
       status: 'warning',
       message: `Current version ${currentVersion} — a newer version (${latest}) is available.`,
       fix: blockedBySelfUpdateGuard
-        ? 'Installed via a package manager that blocks self-update — try: pipx install yt-dlp --force (or brew upgrade yt-dlp)'
+        ? `Installed via a package manager that blocks self-update — try: pipx install yt-dlp --force (or ${platform.getYtDlpUpgradeInstructions()})`
         : 'Run: yt-dlp -U',
     };
   }
