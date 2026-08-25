@@ -21,6 +21,11 @@ import { trace } from '../debugTrace.js';
 export default function Play({ ctx, onBack }) {
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  // An ambiguous search still carries whatever -l/-loop the user typed —
+  // remembered here since the Picker below is a whole separate render pass,
+  // away from the original intent object, and applied once a candidate is
+  // actually confirmed.
+  const [searchLoop, setSearchLoop] = useState(undefined);
   // Every message shown in this screen is a heads-up ("nothing to play",
   // "ignoring X") — never a success (a successful play exits the process
   // entirely) or a system error (that's handled separately below, after Ink
@@ -104,6 +109,7 @@ export default function Play({ ctx, onBack }) {
     }
 
     setSearchQuery(intent.query);
+    setSearchLoop(intent.modifiers?.loop);
     setPicking(true);
   };
 
@@ -194,6 +200,7 @@ export default function Play({ ctx, onBack }) {
             platform: ctx.platform,
             videoId: candidate.videoId,
             title: candidate.title,
+            loop: searchLoop,
             onReady: (localFile) => console.log(`Playing: ${localFile}`),
           }),
         );
