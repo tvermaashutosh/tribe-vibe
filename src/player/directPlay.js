@@ -18,7 +18,7 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
   trace(`playSongForeground: downloaded to ${localFile}, calling onReady`);
   if (onReady) onReady(localFile);
   trace('playSongForeground: calling playForeground');
-  await playForeground({ files: [{ path: localFile, title }], loop });
+  await playForeground({ files: [{ path: localFile, title }], loop, platform });
   trace('playSongForeground: playForeground resolved, returning');
 }
 
@@ -52,5 +52,5 @@ export async function playPlaylistForeground({ resolver, platform, playlistRepo,
     files.push({ path, title: song.title });
   }
   if (onReady) onReady(playlist);
-  await playForeground({ files, loop });
+  await playForeground({ files, loop, platform });
 }
