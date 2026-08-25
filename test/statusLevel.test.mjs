@@ -27,7 +27,7 @@ test(
 test(
   'formatCliStatus matches Ink\'s own error icon and color',
   withTTY(() => {
-    assert.equal(formatCliStatus('error', 'tribe-vibe error: boom'), '\x1b[31m✗ tribe-vibe error: boom\x1b[39m');
+    assert.equal(formatCliStatus('error', 'tv error: boom'), '\x1b[31m✗ tv error: boom\x1b[39m');
   }),
 );
 

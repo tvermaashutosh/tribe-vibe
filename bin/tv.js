@@ -8,6 +8,6 @@ run(process.argv)
   .then(() => trace('bin/tv.js: run() resolved successfully, letting the event loop drain naturally'))
   .catch((err) => {
     trace(`bin/tv.js: run() rejected: ${err.message}`);
-    console.error(formatCliStatus('error', `tribe-vibe error: ${err.message}`));
+    console.error(formatCliStatus('error', `tv error: ${err.message}`));
     process.exit(1);
   });
