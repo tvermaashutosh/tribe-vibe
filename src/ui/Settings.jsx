@@ -99,7 +99,7 @@ export default function Settings({ ctx, onBack }) {
                 saveSettings: ctx.saveSettings,
                 platform: ctx.platform,
               });
-              showStatus('All tribe-vibe data has been reset.', 'success');
+              showStatus('All tv data has been reset.', 'success');
             } else {
               showStatus(null);
             }
