@@ -39,7 +39,7 @@ async function main() {
   // shouldn't block the dependency check below — it's independently useful
   // even if the user still needs to sort out linking themselves.
   try {
-    console.log(formatCliStatus('success', 'Linking tv/tribe-vibe onto PATH...'));
+    console.log(formatCliStatus('success', 'Linking tv onto PATH...'));
     await runStep(NPM_COMMAND, ['link']);
   } catch (err) {
     console.log(formatCliStatus('warning', `npm link failed (${err.message}) — you may need elevated permissions, or run it yourself.`));
