@@ -13,6 +13,18 @@ tv                   # interactive menu
 Requires Node.js 18+, [mpv](https://mpv.io), and [yt-dlp](https://github.com/yt-dlp/yt-dlp). For hotkeys, a keybinding daemon: `skhd` (macOS), `sxhkd` (Linux), or AutoHotkey (Windows).
 
 ```
+npm run setup
+```
+
+Installs npm packages, builds, and links `tv`/`tribe-vibe` onto your PATH, then checks whether mpv/yt-dlp/the hotkey daemon are actually present and prints the exact install command for whatever's missing (never runs it for you, unless you ask):
+
+```
+npm run setup -- --install-deps
+```
+
+Equivalent to doing it by hand:
+
+```
 npm install
 npm run build
 npm link
@@ -54,7 +66,7 @@ These control a background player, separate from a directly typed `tv <song>` �
 
 - **About** — writes a one-page, text-only PDF (`~/Downloads/tribe-vibe-about.pdf`) covering what tribe-vibe is, its low-level design, and the design patterns it uses.
 - **Export data** — writes every alias and playlist to `~/Downloads/tribe-vibe-export.xlsx`.
-- **Troubleshoot** — read-only checks for mpv/yt-dlp installation, available updates, and writable data directories, each with a suggested fix.
+- **Troubleshoot** — read-only checks for mpv/yt-dlp/hotkey-daemon installation, available updates, and writable data directories, each with a suggested fix.
 - **Reset all data** — wipes aliases, playlists, settings, and the audio cache, after a yes/no confirmation that defaults to "no."
 
 ## Data
