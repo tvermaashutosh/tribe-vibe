@@ -19,7 +19,7 @@ npm run setup
 Installs npm packages, builds, and links `tv`/`tribe-vibe` onto your PATH, then checks whether mpv/yt-dlp/the hotkey daemon are actually present and prints the exact install command for whatever's missing (never runs it for you, unless you ask):
 
 ```
-npm run setup -- --install-deps
+npm run setup -- -install-deps
 ```
 
 Equivalent to doing it by hand:
