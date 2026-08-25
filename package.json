@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "setup": "node scripts/setup.mjs",
     "start": "node bin/tv.js",
     "test": "node --test 'test/*.test.mjs'"
   },
