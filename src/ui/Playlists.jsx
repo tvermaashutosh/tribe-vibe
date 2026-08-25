@@ -12,7 +12,7 @@ import { theme } from './theme.js';
 // One screen for everything playlist-related: the list of existing playlists
 // (add/remove/reorder/replace songs, rename, delete), plus creating a brand
 // new one. A playlist's name IS its invocable token — no separate alias list.
-export default function ManagePlaylists({ ctx, onBack }) {
+export default function Playlists({ ctx, onBack }) {
   const [mode, setMode] = useState('list');
   const [selected, setSelected] = useState(null);
   const [editIndex, setEditIndex] = useState(null);

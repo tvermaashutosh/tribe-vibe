@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
 import Aliases from './Aliases.jsx';
-import ManagePlaylists from './ManagePlaylists.jsx';
+import Playlists from './Playlists.jsx';
 import Settings from './Settings.jsx';
 import { theme } from './theme.js';
 
@@ -24,7 +24,7 @@ export default function App({ ctx }) {
       {screen === 'main' && <MainMenu ctx={ctx} onNavigate={setScreen} />}
       {screen === 'play' && <Play ctx={ctx} onBack={() => setScreen('main')} />}
       {screen === 'aliases' && <Aliases ctx={ctx} onBack={() => setScreen('main')} />}
-      {screen === 'playlists' && <ManagePlaylists ctx={ctx} onBack={() => setScreen('main')} />}
+      {screen === 'playlists' && <Playlists ctx={ctx} onBack={() => setScreen('main')} />}
       {screen === 'settings' && <Settings ctx={ctx} onBack={() => setScreen('main')} />}
     </Box>
   );
