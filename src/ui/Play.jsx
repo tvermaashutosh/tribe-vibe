@@ -139,7 +139,7 @@ export default function Play({ ctx, onBack }) {
     return (
       <Box flexDirection="column">
         <Text bold color={theme.secondary}>Play</Text>
-        <Text color={theme.dim}>{status || 'Resolving...'}</Text>
+        {status && <Text color={theme.dim}>{status}</Text>}
       </Box>
     );
   }
