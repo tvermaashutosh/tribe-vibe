@@ -119,7 +119,6 @@ async function runSession({ args, platform, isControlFlag }) {
   // asked to resolve a raw YouTube URL itself — that's what caused header
   // mismatches and pipe-format-detection failures in the first place.
   if (intent.kind === 'song') {
-    console.log('Resolving...');
     await playSongForeground({
       resolver,
       platform,
@@ -129,7 +128,6 @@ async function runSession({ args, platform, isControlFlag }) {
       onReady: (localFile) => console.log(`Playing: ${localFile}`),
     });
   } else if (intent.kind === 'playlist') {
-    console.log('Resolving...');
     await playPlaylistForeground({
       resolver,
       platform,
@@ -151,7 +149,6 @@ async function runSession({ args, platform, isControlFlag }) {
       tokenRegistry,
     });
     if (picked) {
-      console.log('Resolving...');
       await playSongForeground({
         resolver,
         platform,
