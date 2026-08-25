@@ -185,6 +185,7 @@ export default function Picker({
 
   return (
     <Box flexDirection="column">
+      <Text bold color={theme.secondary}>Results</Text>
       {results.length === 0 && <Text color={theme.warning}>⚠ No results found — press esc and try a different search.</Text>}
       {results.map((result, i) => {
         const prefix = i === index ? '❯ ' : '  ';
