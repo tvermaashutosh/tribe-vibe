@@ -1,36 +1,40 @@
 import { normalizeArgs } from './normalize.js';
-import { extractLoopFlag } from './flags.js';
+import { extractLoopFlag, extractLiteralQueryFlag } from './flags.js';
 import { classifyTokens } from './classify.js';
 import { buildIntent } from './resolve.js';
 
-// The whole pipeline, as a chain of pure stages:
-// normalize -> extract the -l/-loop flag -> classify -> resolve.
+// The whole pipeline, as a chain of pure stages, each flag extracted from
+// anywhere in the token list rather than any fixed position — order never
+// matters for any single flag, matching -l/-loop's own contract. A fixed
+// priority only matters where two flags could otherwise interact:
+//   1. -q/-query — a mode-switch, not a value: does everything left over
+//      get alias-resolved, or taken as one literal search string?
+//   2. -l/-loop — a modifier, composable either way #1 goes
+//   3. classify + resolve — only reached when #1 said "alias-resolve it"
 export function resolveIntent(rawArgs, { aliasRepo, playlistRepo }) {
   const tokens = normalizeArgs(rawArgs);
-  const { loop, remaining } = extractLoopFlag(tokens);
+  const { literal, remaining: afterQuery } = extractLiteralQueryFlag(tokens);
+  const { loop, remaining } = extractLoopFlag(afterQuery);
+
+  if (literal) {
+    const query = remaining.join(' ');
+    if (!query) return { kind: 'empty', deterministic: false, modifiers: { loop } };
+    return { kind: 'search', deterministic: false, query, modifiers: { loop } };
+  }
+
   const classified = classifyTokens(remaining, { aliasRepo, playlistRepo });
   return buildIntent({ ...classified, modifiers: { loop } });
 }
 
-const LITERAL_QUERY_RE = /^-(q|query)$/i;
-
 // The single entry point for "resolve one line of typed input" — used
 // identically by the typed CLI and every Ink screen that offers a text box
-// with this grammar (Play, and playlist add/replace-song). If the line
-// starts with -q/-query, everything after that token is a literal search —
-// no alias resolution, no modifiers — otherwise it's the normal
-// alias-aware resolveIntent above. Keeping this in one place is what makes
-// "-q works the same everywhere" true by construction rather than by
-// remembering to copy the check into every screen that has a text box.
+// with this grammar (Play, and playlist add/replace-song). Keeping this in
+// one place is what makes "-q and -l work the same everywhere" true by
+// construction rather than by remembering to copy checks into every screen
+// that has a text box.
 export function resolveTypedInput(text, { aliasRepo, playlistRepo }) {
   const tokens = text.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return { kind: 'empty', deterministic: false, modifiers: {} };
-
-  if (LITERAL_QUERY_RE.test(tokens[0])) {
-    const query = tokens.slice(1).join(' ');
-    if (!query) return { kind: 'empty', deterministic: false, modifiers: {} };
-    return { kind: 'search', deterministic: false, query, modifiers: {} };
-  }
 
   return resolveIntent(tokens, { aliasRepo, playlistRepo });
 }

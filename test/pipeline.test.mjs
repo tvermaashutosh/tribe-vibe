@@ -136,3 +136,46 @@ test('resolveTypedInput: -q with nothing after it, or empty input, resolves to e
   assert.equal(resolveTypedInput('', { aliasRepo, playlistRepo }).kind, 'empty');
   assert.equal(resolveTypedInput('   ', { aliasRepo, playlistRepo }).kind, 'empty');
 });
+
+// -q used to only work as the very first token — buried anywhere else in the
+// line, it silently did nothing (fell through as an ordinary, unmatched
+// token) and the rest still got alias-resolved as if -q were never typed.
+// Extracted the same order-independent way -l already was, this is now true
+// for -q too, matching the "order never matters" contract the rest of the
+// grammar already promises.
+test('resolveTypedInput: -q works from anywhere in the line, not just the first token', () => {
+  const aliasRepo = fakeAliasRepo([
+    { token: 'ts', type: 'artist', value: 'Taylor Swift' },
+    { token: 'willow', type: 'song', videoId: 'abc123', title: 'Taylor Swift - willow' },
+  ]);
+  const playlistRepo = fakePlaylistRepo();
+
+  const buried = resolveTypedInput('ts -q willow', { aliasRepo, playlistRepo });
+  assert.equal(buried.kind, 'search');
+  assert.equal(buried.query, 'ts willow');
+  assert.equal(buried.note, undefined);
+
+  const trailing = resolveTypedInput('ts willow -q', { aliasRepo, playlistRepo });
+  assert.equal(trailing.kind, 'search');
+  assert.equal(trailing.query, 'ts willow');
+});
+
+// The old position-0-only check bypassed extractLoopFlag entirely once -q
+// fired, so -l silently became part of the literal text instead of a real
+// modifier — a real gap, since kind:'search' intents already do apply
+// modifiers.loop once something is picked (see cli.js). Priority extraction
+// fixes this as a natural consequence, not a special case.
+test('resolveTypedInput: -l still composes with -q, regardless of order', () => {
+  const aliasRepo = fakeAliasRepo([]);
+  const playlistRepo = fakePlaylistRepo();
+
+  const a = resolveTypedInput('ts -l -q willow', { aliasRepo, playlistRepo });
+  assert.equal(a.kind, 'search');
+  assert.equal(a.query, 'ts willow');
+  assert.equal(a.modifiers.loop, true);
+
+  const b = resolveTypedInput('-q ts -loop=5 willow', { aliasRepo, playlistRepo });
+  assert.equal(b.kind, 'search');
+  assert.equal(b.query, 'ts willow');
+  assert.equal(b.modifiers.loop, '5');
+});
