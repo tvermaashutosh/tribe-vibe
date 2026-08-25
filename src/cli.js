@@ -15,7 +15,7 @@ import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
 import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
-import { killAllTrackedMpv } from './repository/mpvPidRegistry.js';
+import { killAllMpv } from './player/killAllMpv.js';
 import { trace } from './debugTrace.js';
 
 // Matches tswift's own `trap cleanup EXIT INT TERM` — releases the session
@@ -56,15 +56,18 @@ export async function run(argv) {
   // running, looped forever, for the rest of a session). Every other
   // control flag below still goes through runSession(), which unconditionally
   // starts the daemon first — wrong for a command whose whole job might be
-  // to clean up after that daemon too.
+  // to clean up after that daemon too. Kills every mpv process on the
+  // machine, not just ones tribe-vibe itself spawned — deliberate, so it
+  // still works even for a process this session never tracked in the first
+  // place (which a tracked-PID approach can't recover, by definition).
   if (args.length === 1 && args[0].replace(/^-+/, '').toLowerCase() === 'kill') {
-    const { killed, alreadyGone } = killAllTrackedMpv(platform);
+    const { killed, alreadyGone } = killAllMpv();
     if (killed.length > 0) {
       console.log(formatCliStatus('success', `Stopped ${killed.length} mpv process${killed.length === 1 ? '' : 'es'}: ${killed.join(', ')}`));
     } else {
-      console.log(formatCliStatus('success', 'No tracked mpv processes were running.'));
+      console.log(formatCliStatus('success', 'No mpv processes were running.'));
     }
-    if (alreadyGone.length > 0) trace(`cli.js: -kill found ${alreadyGone.length} already-dead tracked pid(s): ${alreadyGone.join(', ')}`);
+    if (alreadyGone.length > 0) trace(`cli.js: -kill found ${alreadyGone.length} pid(s) that were already gone: ${alreadyGone.join(', ')}`);
     return;
   }
 
