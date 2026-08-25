@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
-import { recordMpvPid } from '../repository/mpvPidRegistry.js';
 
 // Singleton/Supervisor: exactly one mpv daemon per session. Checks whether
 // the IPC socket is already alive before spawning — never risks two
@@ -53,12 +52,6 @@ export class MpvDaemonSupervisor {
     // and crashes the whole process instead of letting ensureRunning()'s
     // poll-then-timeout produce the friendly "is mpv installed?" message.
     child.once('error', () => {});
-    // Recorded so `tv -kill` can stop the daemon too, not just orphaned
-    // foreground plays — no exit-tracking needed here the way playForeground
-    // has it: this process is deliberately unref()'d and meant to outlive
-    // this supervisor, so killAllTrackedMpv's own liveness check is what
-    // prunes this entry later, whether via -kill or a natural daemon exit.
-    recordMpvPid(this.platform, child.pid);
     child.unref();
   }
 }
