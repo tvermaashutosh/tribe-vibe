@@ -33,7 +33,7 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // fires right before mpv takes over the terminal.
 //
 // An empty playlist is nothing to play, not a system failure — it doesn't
-// deserve the same "tribe-vibe error:" + nonzero exit as a genuine crash.
+// deserve the same "tv error:" + nonzero exit as a genuine crash.
 // onEmpty lets a caller handle it gracefully instead; a caller that doesn't
 // pass one keeps the old throw, so nothing that already relies on it breaks.
 export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onEmpty, onReady }) {
