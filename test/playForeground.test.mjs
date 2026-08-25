@@ -9,13 +9,14 @@ import { playForeground } from '../src/player/playForeground.js';
 
 const SIGNAL_GUARD_DRIVER = fileURLToPath(new URL('./helpers/signalGuardDriver.mjs', import.meta.url));
 
-test('playForeground rejects clearly when mpv is not on PATH', async () => {
+test('playForeground rejects clearly when mpv is not on PATH, naming the exact install command', async () => {
   const originalPath = process.env.PATH;
   process.env.PATH = '/definitely/not/a/real/path';
+  const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
   try {
     await assert.rejects(
-      () => playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] }),
-      /mpv is not available/,
+      () => playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform }),
+      /mpv is not available.*Try: brew install mpv yt-dlp skhd/s,
     );
   } finally {
     process.env.PATH = originalPath;

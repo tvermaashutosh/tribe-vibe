@@ -1,7 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { trace } from '../debugTrace.js';
-
-const SIGNAL_EXIT_CODES = { SIGINT: 130, SIGHUP: 129, SIGTERM: 143 };
+import { SIGNAL_EXIT_CODES } from '../constants.js';
 
 // Guards only the window between "mpv just exited" and this process's own
 // controlled exit — confirmed by tracing a real hang that this process can
@@ -50,7 +49,7 @@ function guardVulnerableWindow() {
 // set before file 1 would silently leak onto file 2, 3, etc. mpv's own
 // --{ / --} per-file markers are the real fix (verified live: without them,
 // the last --force-media-title on the line wins for the whole playlist).
-export function playForeground({ files, loop }) {
+export function playForeground({ files, loop, platform }) {
   // The ${media-title} substitution is colored cyan (matching
   // theme.secondary), leaving the "Now playing: " prefix plain — mpv just
   // echoes this template verbatim to the terminal, so embedding a raw ANSI
@@ -80,7 +79,9 @@ export function playForeground({ files, loop }) {
     const child = spawn('mpv', args, { stdio: 'inherit' });
     child.once('error', (err) => {
       trace(`playForeground: mpv spawn error: ${err.message}`);
-      reject(new Error(`mpv is not available — is it installed? (${err.message})`));
+      // tswift's own dependency check names the exact install command for
+      // every missing tool, not just "is it installed?" — matching that here.
+      reject(new Error(`mpv is not available — is it installed? (${err.message}) Try: ${platform.getInstallInstructions()}`));
     });
     child.once('exit', (code, signal) => {
       trace(`playForeground: mpv exited code=${code} signal=${signal}, calling restoreTerminal()`);
