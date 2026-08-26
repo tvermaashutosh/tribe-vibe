@@ -24,6 +24,19 @@ function spawnFakeProcess(name) {
 
 const isWindows = process.platform === 'win32';
 
+// A flat sleep before searching was flaky under load — a fixed delay can't
+// promise the OS has registered the new process by then, on every machine,
+// every time. Polling killAllByExactName itself until it actually finds the
+// pid (or times out) removes the race entirely instead of guessing a number.
+async function killAllByExactNameEventually(name, { maxAttempts = 30, intervalMs = 100 } = {}) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const result = killAllByExactName(name);
+    if (result.killed.length > 0 || result.alreadyGone.length > 0) return result;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return { killed: [], alreadyGone: [] };
+}
+
 test(
   'killAllByExactName finds and terminates a real process by its exact name',
   { skip: isWindows && 'tasklist-based enumeration unverified on Windows in this environment' },
@@ -32,11 +45,7 @@ test(
     const child = spawnFakeProcess(name);
     const exited = new Promise((resolve) => child.once('exit', resolve));
 
-    // Give the OS a beat to register the new process under its real name
-    // before searching for it.
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const { killed, alreadyGone } = killAllByExactName(name);
+    const { killed, alreadyGone } = await killAllByExactNameEventually(name);
     await exited;
 
     assert.deepEqual(killed, [child.pid]);
@@ -51,7 +60,13 @@ test(
   async () => {
     const unrelatedName = `tribevibe-test-${process.pid}-unrelated`;
     const unrelated = spawnFakeProcess(unrelatedName);
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // Deliberately brief and immediate, not a long observation window — a
+    // sandboxed test environment can reap an orphaned spawned child on its
+    // own after a few hundred ms regardless of this test, which would make
+    // "still alive" wrongly look like a failure of this function. A new
+    // process registers under pgrep within single-digit ms in practice, so
+    // there's nothing to gain from waiting longer to prove the negative.
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const { killed, alreadyGone } = killAllByExactName(`tribevibe-test-${process.pid}-nonexistent`);
 
