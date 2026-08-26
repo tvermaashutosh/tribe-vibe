@@ -6,6 +6,7 @@ import Aliases from './Aliases.jsx';
 import Playlists from './Playlists.jsx';
 import Settings from './Settings.jsx';
 import { theme } from './theme.js';
+import { exitCleanly } from './exitCleanly.js';
 
 export default function App({ ctx }) {
   const [screen, setScreen] = useState('main');
@@ -13,7 +14,7 @@ export default function App({ ctx }) {
   // Every sub-screen's own escape handler already routes back to 'main' — this
   // only needs to cover the terminal case: escape at the main menu itself exits.
   useInput((input, key) => {
-    if (key.escape && screen === 'main') process.exit(0);
+    if (key.escape && screen === 'main') exitCleanly(ctx.platform);
   });
 
   return (
