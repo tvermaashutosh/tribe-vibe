@@ -34,11 +34,31 @@ export class MpvIpcClient extends EventEmitter {
         this.socket = socket;
         socket.on('data', (chunk) => this._onData(chunk));
         socket.on('error', (err) => this.emit('error', err));
-        socket.on('close', () => this.emit('close'));
+        // 'close' always fires after 'error' too (Node's own documented
+        // socket behavior), so this one place covers every way the
+        // connection can end — a graceful close(), the daemon crashing, or
+        // any other socket error — without duplicating the same cleanup in
+        // multiple handlers. this.socket is cleared here so send()'s own
+        // "not connected" guard takes over immediately for anything called
+        // after this, instead of trying to write to a dead socket.
+        socket.on('close', () => {
+          this.socket = null;
+          this._rejectAllPending(new Error('mpv IPC connection closed'));
+          this.emit('close');
+        });
         resolve();
       });
       socket.once('error', reject);
     });
+  }
+
+  // A command in flight when the connection dies used to just hang forever —
+  // its promise never resolved or rejected, since nothing walked `pending`
+  // on close/error. Rejecting explicitly here means a hotkey sent right as
+  // the daemon dies fails fast with a clear error instead.
+  _rejectAllPending(err) {
+    for (const { reject } of this.pending.values()) reject(err);
+    this.pending.clear();
   }
 
   send(command) {

@@ -47,3 +47,47 @@ test(
     assert.ok(true);
   },
 );
+
+// A command in flight when the connection dies used to just hang forever —
+// nothing ever walked `pending` on close/error, so its promise never
+// resolved or rejected. This is the real scenario: a hotkey sent right as
+// the daemon dies.
+test(
+  'a command in flight when the connection closes rejects instead of hanging forever',
+  async () => {
+    const socketPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-ipc-test-')), 'test.sock');
+    const server = net.createServer((socket) => {
+      socket.on('error', () => {});
+      // Accept the connection and the incoming command, but never respond —
+      // then destroy the connection, simulating the daemon dying mid-request.
+      socket.on('data', () => {
+        socket.destroy();
+      });
+    });
+    await new Promise((resolve) => server.listen(socketPath, resolve));
+
+    const client = new MpvIpcClient(socketPath);
+    await client.connect();
+
+    await assert.rejects(() => client.send(['get_property', 'pause']), /mpv IPC connection closed/);
+
+    server.close();
+  },
+);
+
+test(
+  'a new send() after the connection has closed rejects immediately as not connected',
+  async () => {
+    const socketPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-ipc-test-')), 'test.sock');
+    const server = net.createServer((socket) => socket.destroy());
+    await new Promise((resolve) => server.listen(socketPath, resolve));
+
+    const client = new MpvIpcClient(socketPath);
+    await client.connect();
+    await new Promise((resolve) => client.once('close', resolve));
+
+    await assert.rejects(() => client.send(['get_property', 'pause']), /mpv IPC client is not connected/);
+
+    server.close();
+  },
+);
