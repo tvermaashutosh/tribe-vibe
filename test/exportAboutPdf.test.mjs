@@ -47,9 +47,13 @@ test('exportAboutPdf covers the general, LLD, and design-pattern content', async
   assert.match(pdf, /Repository layer/); // LLD
   assert.match(pdf, /Design Patterns/); // design patterns
   assert.match(pdf, /Adapter/);
+  assert.match(pdf, /Proxy/);
   assert.match(pdf, /Factory/);
+  assert.match(pdf, /Builder/);
   assert.match(pdf, /Singleton\/Supervisor/);
   assert.match(pdf, /Strategy/);
+  assert.match(pdf, /Chain of Responsibility/);
+  assert.match(pdf, /State/);
   assert.match(pdf, /Command/);
   assert.match(pdf, /Facade/);
 });
