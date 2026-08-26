@@ -3,28 +3,36 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // YouTube's serving behavior for direct/streamed URLs shifts over time (which
-// player clients still get plain https URLs, which formats are offered) —
-// these are the failure signatures worth naming instead of dumping raw
-// yt-dlp stderr on the user. Takes the config-hint path as a param rather
-// than hardcoding one — that path is OS-dependent (yt-dlp doesn't even look
-// at ~/.config on Windows), so the platform adapter is the one place that's
-// allowed to know it.
+// player clients still get plain https URLs, which formats are offered), and
+// yt-dlp's own error text for a given failure periodically changes wording —
+// a declarative, ordered list rather than an if/else chain, so a new failure
+// signature is one entry appended here, not another branch threaded into
+// existing ones. First match wins; unrecognized messages fall through
+// unchanged, same as before.
+const ERROR_SIGNATURES = [
+  {
+    test: (message) => /HTTP Error 403|Forbidden/i.test(message),
+    enrich: (message, ytDlpConfigHint) =>
+      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
+  },
+  {
+    test: (message) => /Requested format is not available/i.test(message),
+    enrich: (message, ytDlpConfigHint) =>
+      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
+  },
+  {
+    test: (message) => /timed out|timeout/i.test(message),
+    enrich: (message) => `${message}\nLooks like a slow/flaky connection — worth just trying again.`,
+  },
+];
+
+// Takes the config-hint path as a param rather than hardcoding one — that
+// path is OS-dependent (yt-dlp doesn't even look at ~/.config on Windows),
+// so the platform adapter is the one place that's allowed to know it.
 function enrichError(rawMessage, fallback, ytDlpConfigHint) {
   const message = (rawMessage || '').trim() || fallback;
-  if (/HTTP Error 403|Forbidden/i.test(message)) {
-    return new Error(
-      `${message}\nA 403 usually means YouTube changed which player clients still work, not a stale yt-dlp — try: yt-dlp -U\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
-    );
-  }
-  if (/Requested format is not available/i.test(message)) {
-    return new Error(
-      `${message}\nYouTube may have changed what formats it serves — try: yt-dlp -U, then yt-dlp -F <url> to see what's actually offered.\nCheck ${ytDlpConfigHint} (player_client / remote-components) too.`,
-    );
-  }
-  if (/timed out|timeout/i.test(message)) {
-    return new Error(`${message}\nLooks like a slow/flaky connection — worth just trying again.`);
-  }
-  return new Error(message);
+  const signature = ERROR_SIGNATURES.find(({ test }) => test(message));
+  return new Error(signature ? signature.enrich(message, ytDlpConfigHint) : message);
 }
 
 // Bounds every network attempt instead of trusting yt-dlp's own defaults (10

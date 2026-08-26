@@ -174,3 +174,26 @@ test(
     await assert.rejects(() => resolver.downloadAudio('abc123', cacheDir), /Check %APPDATA%\\yt-dlp\\config \(player_client/);
   }),
 );
+
+test(
+  'downloadAudio suggests retrying on a timeout, with no config-hint line (a different signature entirely)',
+  withFailingYtdlp('ERROR: [download] Got error: The read operation timed out')(async () => {
+    const cacheDir = tempCacheDir();
+    const resolver = new YoutubeResolver(fakePlatform());
+    const err = await resolver.downloadAudio('abc123', cacheDir).catch((caught) => caught);
+    assert.match(err.message, /Looks like a slow\/flaky connection — worth just trying again\./);
+    assert.doesNotMatch(err.message, /Check ~\/\.config/);
+  }),
+);
+
+test(
+  'downloadAudio passes an unrecognized failure through unchanged, matching no signature',
+  withFailingYtdlp('ERROR: something entirely new yt-dlp has never said before')(async () => {
+    const cacheDir = tempCacheDir();
+    const resolver = new YoutubeResolver(fakePlatform());
+    await assert.rejects(
+      () => resolver.downloadAudio('abc123', cacheDir),
+      /^Error: ERROR: something entirely new yt-dlp has never said before$/,
+    );
+  }),
+);
