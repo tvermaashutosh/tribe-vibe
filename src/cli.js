@@ -18,6 +18,17 @@ import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
 import { killAllMpv } from './player/killAllMpv.js';
 import { trace } from './debugTrace.js';
 
+// A single token's flag name, but ONLY when it's actually dash-prefixed —
+// aliases/playlists are legally allowed to be named a bare "pause" or "kill"
+// (validateToken only forbids a leading -), and stripping dashes before
+// checking membership used to match those names identically to -pause/-kill,
+// silently hijacking a play into a hotkey command instead. Returns null for
+// anything that isn't a single, dash-prefixed token.
+export function parseSingleFlag(args) {
+  if (args.length !== 1 || !/^-/.test(args[0])) return null;
+  return args[0].replace(/^-+/, '').toLowerCase();
+}
+
 // Matches tswift's own `trap cleanup EXIT INT TERM` — releases the session
 // lock the instant an external signal arrives, rather than only in the
 // finally block below, which an abrupt kill can skip straight past entirely
@@ -47,6 +58,7 @@ function guardSessionLock(platform) {
 export async function run(argv) {
   const args = argv.slice(2);
   const platform = getPlatform();
+  const flag = parseSingleFlag(args);
 
   // Deliberately handled before anything else here — unlike every other
   // control flag, -kill must work even when the daemon/IPC path itself is
@@ -60,7 +72,7 @@ export async function run(argv) {
   // machine, not just ones tribe-vibe itself spawned — deliberate, so it
   // still works even for a process this session never tracked in the first
   // place (which a tracked-PID approach can't recover, by definition).
-  if (args.length === 1 && args[0].replace(/^-+/, '').toLowerCase() === 'kill') {
+  if (flag === 'kill') {
     const { killed, alreadyGone } = killAllMpv();
     if (killed.length > 0) {
       console.log(formatCliStatus('success', `Stopped ${killed.length} mpv process${killed.length === 1 ? '' : 'es'}: ${killed.join(', ')}`));
@@ -74,7 +86,7 @@ export async function run(argv) {
   // A hotkey control command (-pause, -next, ...) never downloads or plays
   // anything itself — it only sends an IPC command to an already-running
   // background daemon, so it never contends for the session lock below.
-  const isControlFlag = args.length === 1 && CONTROL_FLAGS.includes(args[0].replace(/^-+/, '').toLowerCase());
+  const isControlFlag = flag !== null && CONTROL_FLAGS.includes(flag);
   // The audio cache has no eviction — wiped clean at the start of a real
   // play session instead, so it never accumulates without bound. Gated by
   // the session lock: wiping while ANOTHER tv process still has an
@@ -87,14 +99,14 @@ export async function run(argv) {
   if (holdsSessionLock) clearCacheDir(platform);
   const unguardLock = holdsSessionLock ? guardSessionLock(platform) : () => {};
   try {
-    return await runSession({ args, platform, isControlFlag });
+    return await runSession({ args, platform, isControlFlag, flag });
   } finally {
     unguardLock();
     if (holdsSessionLock) releaseSessionLock(platform);
   }
 }
 
-async function runSession({ args, platform, isControlFlag }) {
+async function runSession({ args, platform, isControlFlag, flag }) {
   const aliasRepo = new AliasRepository(platform.getConfigDir());
   const playlistRepo = new PlaylistRepository(platform.getConfigDir());
   const settingsRepo = new SettingsRepository(platform.getConfigDir());
@@ -146,7 +158,6 @@ async function runSession({ args, platform, isControlFlag }) {
   // the real CONTROL_FLAGS list (not just "starts with -"), since -l/-loop is
   // also dash-prefixed but belongs to the play grammar below, not here.
   if (isControlFlag) {
-    const flag = args[0].replace(/^-+/, '').toLowerCase();
     await commands.execute({ type: flag });
     return closeAndExit();
   }
