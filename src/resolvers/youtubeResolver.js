@@ -2,13 +2,13 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// YouTube's serving behavior for direct/streamed URLs shifts over time (which
-// player clients still get plain https URLs, which formats are offered), and
-// yt-dlp's own error text for a given failure periodically changes wording —
-// a declarative, ordered list rather than an if/else chain, so a new failure
-// signature is one entry appended here, not another branch threaded into
-// existing ones. First match wins; unrecognized messages fall through
-// unchanged, same as before.
+// Chain of Responsibility: YouTube's serving behavior for direct/streamed
+// URLs shifts over time (which player clients still get plain https URLs,
+// which formats are offered), and yt-dlp's own error text for a given
+// failure periodically changes wording — a declarative, ordered list rather
+// than an if/else chain, so a new failure signature is one entry appended
+// here, not another branch threaded into existing ones. First match wins;
+// unrecognized messages fall through unchanged, same as before.
 const ERROR_SIGNATURES = [
   {
     test: (message) => /HTTP Error 403|Forbidden/i.test(message),
