@@ -1,5 +1,6 @@
 import net from 'node:net';
 import { EventEmitter } from 'node:events';
+import { trace } from '../debugTrace.js';
 
 // Proxy: stands in for the real mpv process across a socket, same call shape
 // (send a command, get a result back) as if it were local — distinct from
@@ -17,6 +18,13 @@ export class MpvIpcClient extends EventEmitter {
     this.buffer = '';
     this.pending = new Map();
     this.requestId = 0;
+    // EventEmitter throws synchronously when 'error' is emitted with zero
+    // listeners registered — confirmed nothing upstream (cli.js, Player,
+    // Picker.jsx) currently listens for it, so a real socket error (the
+    // daemon crashing mid-session, an ECONNRESET) would otherwise crash the
+    // whole tv process. This is the safety net; a caller that wants to react
+    // to it can still add its own 'error' listener too — both fire.
+    this.on('error', (err) => trace(`MpvIpcClient: unhandled socket error: ${err.message}`));
   }
 
   connect() {
