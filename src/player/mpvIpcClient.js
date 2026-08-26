@@ -1,6 +1,10 @@
 import net from 'node:net';
 import { EventEmitter } from 'node:events';
 
+// Proxy: stands in for the real mpv process across a socket, same call shape
+// (send a command, get a result back) as if it were local — distinct from
+// Player's Adapter role one layer up, which reshapes that interface into
+// player-domain methods (pause/resume/next/...) rather than raw IPC calls.
 // Thin JSON-IPC client for mpv's --input-ipc-server protocol: newline-delimited
 // JSON in both directions. Works identically over a Unix socket (mac/linux)
 // or a Windows named pipe — Node's net.connect abstracts the transport away,
