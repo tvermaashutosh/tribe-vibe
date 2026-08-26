@@ -1,5 +1,7 @@
-// Builds the final play intent from classified tokens. This is where the
-// deterministic-vs-ambiguous split happens:
+// Builder: assembles the final, variable-shaped play intent step by step
+// from classified tokens — not a classic fluent Builder class, but the same
+// intent (a single function playing that role here instead). This is where
+// the deterministic-vs-ambiguous split happens:
 //   - a playlist or song alias match is a pinned videoId -> fully deterministic,
 //     no search, no picker, ever.
 //   - anything else (artist alias + free text, or raw free text alone) is a
