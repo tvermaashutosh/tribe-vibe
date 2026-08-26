@@ -9,6 +9,7 @@ import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
 import { formatCliStatus } from './statusLevel.js';
 import { trace } from '../debugTrace.js';
+import { exitCleanly } from './exitCleanly.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
@@ -51,12 +52,12 @@ export default function Play({ ctx, onBack }) {
       await playFn();
       trace('handOffToForeground: playFn() resolved, calling closeDaemon()');
       ctx.closeDaemon();
-      trace('handOffToForeground: closeDaemon() returned, calling process.exit(0)');
-      process.exit(0);
+      trace('handOffToForeground: closeDaemon() returned, calling exitCleanly(0)');
+      exitCleanly(ctx.platform);
     } catch (err) {
       trace(`handOffToForeground: caught error: ${err.message}`);
       console.error(formatCliStatus('error', `tv error: ${err.message}`));
-      process.exit(1);
+      exitCleanly(ctx.platform, 1);
     }
   };
 
