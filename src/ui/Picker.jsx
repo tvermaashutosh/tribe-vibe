@@ -102,6 +102,11 @@ export default function Picker({
     { isActive: phase !== 'namingAlias' && phase !== 'choosingPlaylist' },
   );
 
+  // State: `phase` is a real state machine (typing -> searching -> listing
+  // -> namingAlias/choosingPlaylist, each with its own valid transitions and
+  // rendering) — informal on purpose, as plain branches below rather than
+  // separate State classes. Formalizing it would be ceremony, not a real
+  // improvement, for a component this size.
   if (phase === 'typing') {
     return (
       <Box flexDirection="column">
