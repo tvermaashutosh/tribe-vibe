@@ -16,7 +16,7 @@ import { createCommandRegistry } from './commands/commandRegistry.js';
 import { resolveTypedInput } from './pipeline/index.js';
 import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
 import { killAllMpv } from './player/killAllMpv.js';
-import { trace } from './debugTrace.js';
+import { trace, truncateTraceLogForNewSession } from './debugTrace.js';
 
 // A single token's flag name, but ONLY when it's actually dash-prefixed —
 // aliases/playlists are legally allowed to be named a bare "pause" or "kill"
@@ -108,7 +108,10 @@ export async function run(argv) {
   // clearCacheDir. Only the process that wins the lock gets to wipe; every
   // other one just skips it this time rather than risk someone else's files.
   const holdsSessionLock = !isControlFlag && acquireSessionLock(platform);
-  if (holdsSessionLock) clearCacheDir(platform);
+  if (holdsSessionLock) {
+    truncateTraceLogForNewSession();
+    clearCacheDir(platform);
+  }
   const unguardLock = holdsSessionLock ? guardSessionLock(platform) : () => {};
   try {
     return await runSession({ args, platform, isControlFlag, flag });
