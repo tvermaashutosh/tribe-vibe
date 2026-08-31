@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { MpvDaemonSupervisor } from '../player/mpvDaemonSupervisor.js';
 import { spawnAndCollect } from '../spawnAndCollect.js';
+import { MPV_BINARY, YTDLP_BINARY } from '../constants.js';
 
 // Runs a fixed set of read-only checks and returns plain results — no
 // commands are ever executed on the user's behalf. Each check reports a
@@ -46,10 +47,10 @@ export function checkWritableDir(name, dir) {
 }
 
 export async function checkMpv(platform) {
-  const versionResult = await spawnAndCollect('mpv', ['--version']);
+  const versionResult = await spawnAndCollect(MPV_BINARY, ['--version']);
   if (versionResult.code === null) {
     return {
-      name: 'mpv',
+      name: MPV_BINARY,
       status: 'error',
       message: 'mpv is not installed, or not on PATH.',
       fix: platform.getInstallInstructions(),
@@ -57,7 +58,7 @@ export async function checkMpv(platform) {
     };
   }
   const firstLine = versionResult.stdout.split('\n')[0] || 'unknown version';
-  return { name: 'mpv', status: 'success', message: `Found: ${firstLine}` };
+  return { name: MPV_BINARY, status: 'success', message: `Found: ${firstLine}` };
 }
 
 // Distinct from mpv/yt-dlp: the app fully works without a hotkey daemon
@@ -89,10 +90,10 @@ async function checkMpvDaemon(platform) {
 }
 
 export async function checkYtDlp(platform) {
-  const installs = findAllOnPath('yt-dlp', platform);
+  const installs = findAllOnPath(YTDLP_BINARY, platform);
   if (installs.length === 0) {
     return {
-      name: 'yt-dlp',
+      name: YTDLP_BINARY,
       status: 'error',
       message: 'yt-dlp is not installed, or not on PATH.',
       fix: platform.getInstallInstructions(),
@@ -100,24 +101,24 @@ export async function checkYtDlp(platform) {
     };
   }
 
-  const versionResult = await spawnAndCollect('yt-dlp', ['--version']);
+  const versionResult = await spawnAndCollect(YTDLP_BINARY, ['--version']);
   const currentVersion = versionResult.stdout.trim() || 'unknown';
 
   if (installs.length > 1) {
     return {
-      name: 'yt-dlp',
+      name: YTDLP_BINARY,
       status: 'warning',
       message: `Found ${installs.length} copies on PATH (using: ${installs[0]}) — current version ${currentVersion}.`,
       fix: `Multiple installs can shadow each other depending on PATH order. Installs found: ${installs.join(', ')}`,
     };
   }
 
-  const updateResult = await spawnAndCollect('yt-dlp', ['-U']);
+  const updateResult = await spawnAndCollect(YTDLP_BINARY, ['-U']);
   const { latest, blockedBySelfUpdateGuard } = parseUpdateOutput(`${updateResult.stdout}\n${updateResult.stderr}`);
 
   if (latest && latest !== currentVersion) {
     return {
-      name: 'yt-dlp',
+      name: YTDLP_BINARY,
       status: 'warning',
       message: `Current version ${currentVersion} — a newer version (${latest}) is available.`,
       fix: blockedBySelfUpdateGuard
@@ -126,7 +127,7 @@ export async function checkYtDlp(platform) {
     };
   }
 
-  return { name: 'yt-dlp', status: 'success', message: `Current version ${currentVersion} — up to date.` };
+  return { name: YTDLP_BINARY, status: 'success', message: `Current version ${currentVersion} — up to date.` };
 }
 
 export async function runDiagnostics(platform) {
