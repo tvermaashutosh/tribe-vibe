@@ -6,7 +6,7 @@ import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
-import { sortByRecency } from './sortByRecency.js';
+import { buildAliasListItems } from './aliasListItems.js';
 import { theme } from './theme.js';
 
 // One screen for everything alias-related: the flat list of every existing
@@ -44,13 +44,8 @@ export default function Aliases({ ctx, onBack }) {
   );
 
   if (mode === 'list') {
-    // Songs then artists (most-specific first, mirrors Play's browse list),
-    // most-recently-touched first within each chunk.
-    const songAliases = sortByRecency(aliases.filter((alias) => alias.type === 'song'));
-    const artistAliases = sortByRecency(aliases.filter((alias) => alias.type === 'artist'));
     const items = [
-      ...songAliases.map((alias) => ({ label: `${alias.token}  →  ${alias.title}  (song)`, value: alias.token })),
-      ...artistAliases.map((alias) => ({ label: `${alias.token}  →  ${alias.value}  (artist)`, value: alias.token })),
+      ...buildAliasListItems(aliases),
       ...(aliases.length > 0 ? [DIVIDER_ITEM] : []),
       { label: '+ New artist alias', value: '__addArtist__' },
       { label: '+ New song alias', value: '__addSong__' },
