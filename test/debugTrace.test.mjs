@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { trace, LOG_PATH } from '../src/debugTrace.js';
+import { trace, truncateTraceLogForNewSession, LOG_PATH } from '../src/debugTrace.js';
 
 function withEnv(value, fn) {
   return async () => {
@@ -72,29 +72,80 @@ test(
   }),
 );
 
-// Bug this addresses: tracing is on by default now for every invocation,
-// not just a deliberate one-off debug session — appending forever would
-// grow the log unbounded across normal, ongoing use. A fresh import (cache
-// -busted with a query string, the standard technique for a genuinely
-// fresh module instance in a test) stands in for a real new `tv` process,
-// since debugTrace.js's own truncate-once state is otherwise shared for
-// the whole lifetime of one real process (or, here, one test run).
 test(
-  "a new run's first trace() call replaces the log, not appends to whatever a previous run left",
-  withEnv(undefined, async () => {
-    const { trace: freshTrace, LOG_PATH: freshLogPath } = await import(`../src/debugTrace.js?fresh=${Date.now()}-${Math.random()}`);
-    fs.writeFileSync(freshLogPath, 'stale content left behind by a previous run\n');
-
-    freshTrace('trace-test: first line of the new run');
-    const afterFirst = fs.readFileSync(freshLogPath, 'utf8');
-    assert.doesNotMatch(afterFirst, /stale content/);
-    assert.match(afterFirst, /first line of the new run/);
-
-    // A second call within the SAME run must still append, not truncate
-    // again — that's what actually captures a whole lifecycle.
-    freshTrace('trace-test: second line of the same new run');
-    const afterSecond = fs.readFileSync(freshLogPath, 'utf8');
-    assert.match(afterSecond, /first line of the new run/);
-    assert.match(afterSecond, /second line of the same new run/);
+  'truncateTraceLogForNewSession() wipes existing content',
+  withEnv(undefined, () => {
+    fs.writeFileSync(LOG_PATH, 'stale content from a previous session\n');
+    truncateTraceLogForNewSession();
+    assert.equal(readLogTail(), '');
   }),
 );
+
+test(
+  'trace() calls after truncateTraceLogForNewSession() still accumulate normally',
+  withEnv(undefined, () => {
+    truncateTraceLogForNewSession();
+    trace('trace-test: first line of the session');
+    trace('trace-test: second line of the same session');
+    const contents = readLogTail();
+    assert.match(contents, /first line of the session/);
+    assert.match(contents, /second line of the same session/);
+  }),
+);
+
+test(
+  'truncateTraceLogForNewSession() does nothing when TRIBE_VIBE_TRACE=0',
+  withEnv('0', () => {
+    fs.writeFileSync(LOG_PATH, 'content that should survive since tracing is off\n');
+    truncateTraceLogForNewSession();
+    assert.match(readLogTail(), /content that should survive/);
+  }),
+);
+
+test(
+  'truncateTraceLogForNewSession() never throws, even if writing the log fails',
+  withEnv(undefined, () => {
+    const original = fs.writeFileSync;
+    fs.writeFileSync = () => {
+      throw new Error('simulated disk failure');
+    };
+    try {
+      assert.doesNotThrow(() => truncateTraceLogForNewSession());
+    } finally {
+      fs.writeFileSync = original;
+    }
+  }),
+);
+
+// This is the actual bug that shipped: every tv invocation is its own OS
+// process (a play, -pause, -kill, ...) sharing this one LOG_PATH file. An
+// earlier version truncated on each process's own first trace() call — but
+// a hotkey fired while a play is still running (the documented, everyday
+// way hotkeys are meant to be used, per README's own "these control a
+// background player, separate from a directly typed tv <song>") is a
+// SEPARATE process, so its first trace() call wiped out everything the
+// still-running play had already written. cli.js now only calls
+// truncateTraceLogForNewSession() when it holds the session lock — which a
+// control-flag command never acquires in the first place. This test proves
+// the actual invariant that matters: a "process" that never calls
+// truncate (standing in for a hotkey command, or a second play that lost
+// the session-lock race) must never destroy what a "process" that already
+// truncated and is still tracing has written.
+test('a process that never truncates only ever appends, never wiping a still-running session\'s log', withEnv(undefined, () => {
+  // Process A: wins the session lock, resets the log, starts tracing.
+  truncateTraceLogForNewSession();
+  trace('trace-test: process A — still-running play, line 1');
+
+  // Process B: a hotkey command, or a play that lost the lock race — never
+  // calls truncateTraceLogForNewSession() at all, only trace().
+  trace('trace-test: process B — hotkey command, never truncates');
+
+  // Process A keeps going, same as a real play continuing after a hotkey
+  // fires mid-session.
+  trace('trace-test: process A — still-running play, line 2');
+
+  const contents = readLogTail();
+  assert.match(contents, /process A — still-running play, line 1/);
+  assert.match(contents, /process B — hotkey command, never truncates/);
+  assert.match(contents, /process A — still-running play, line 2/);
+}));
