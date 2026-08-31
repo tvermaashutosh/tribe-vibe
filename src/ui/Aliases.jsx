@@ -5,6 +5,8 @@ import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
+import { playSongForeground } from '../player/directPlay.js';
+import { handOffToForeground } from './handOffToForeground.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { buildAliasListItems } from './aliasListItems.js';
 import { theme } from './theme.js';
@@ -72,7 +74,12 @@ export default function Aliases({ ctx, onBack }) {
   }
 
   if (mode === 'detail') {
+    // A song alias is fully deterministic — playing it needs no picker, no
+    // ambiguous search, nothing — so it's the very first option here,
+    // exactly like Play view's own browse list would play it. An artist
+    // alias has no such option: it's an ambiguous search by definition.
     const items = [
+      ...(selectedEntry.type === 'song' ? [{ label: '▶ Play', value: 'play' }] : []),
       { label: '⟳ Rename alias', value: 'rename' },
       ...(selectedEntry.type === 'song' ? [{ label: '⟳ Replace (listen & re-pick)', value: 'replace' }] : []),
       { label: '- Delete alias', value: 'delete' },
@@ -88,6 +95,17 @@ export default function Aliases({ ctx, onBack }) {
           onSelect={(item) => {
             setError(null);
             if (item.value === '__back__') return setMode('list');
+            if (item.value === 'play') {
+              return handOffToForeground(ctx, () =>
+                playSongForeground({
+                  resolver: ctx.resolver,
+                  platform: ctx.platform,
+                  videoId: selectedEntry.videoId,
+                  title: selectedEntry.title,
+                  onReady: (localFile) => console.log(`Playing: ${localFile}`),
+                }),
+              );
+            }
             if (item.value === 'delete') {
               ctx.aliasRepo.removeAlias(selectedEntry.token);
               return setMode('list');
