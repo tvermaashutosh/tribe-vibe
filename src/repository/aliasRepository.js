@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readJsonArray, writeJsonArrayAtomic } from './jsonStore.js';
+import { readJsonArray, writeJsonAtomic } from './jsonStore.js';
 import { assertValidToken } from './validateToken.js';
 
 // Artist aliases: {token, type:'artist', value: canonicalName} — simple text,
@@ -100,6 +100,6 @@ export class AliasRepository {
   }
 
   _save() {
-    writeJsonArrayAtomic(this.filePath, this.aliases);
+    writeJsonAtomic(this.filePath, this.aliases);
   }
 }
