@@ -1,27 +1,12 @@
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { MpvDaemonSupervisor } from '../player/mpvDaemonSupervisor.js';
+import { spawnAndCollect } from '../spawnAndCollect.js';
 
 // Runs a fixed set of read-only checks and returns plain results — no
 // commands are ever executed on the user's behalf. Each check reports a
 // copy-pasteable fix instead, since deciding to run brew/pipx/etc. is a call
 // only the user should make.
-function run(command, args) {
-  return new Promise((resolve) => {
-    const proc = spawn(command, args);
-    let stdout = '';
-    let stderr = '';
-    proc.stdout?.on('data', (chunk) => {
-      stdout += chunk;
-    });
-    proc.stderr?.on('data', (chunk) => {
-      stderr += chunk;
-    });
-    proc.on('error', () => resolve({ code: null, stdout, stderr }));
-    proc.on('close', (code) => resolve({ code, stdout, stderr }));
-  });
-}
 
 // Scans PATH directly rather than relying on `which -a` (not present on
 // Windows, and this stays consistent across all three platforms).
@@ -61,7 +46,7 @@ export function checkWritableDir(name, dir) {
 }
 
 export async function checkMpv(platform) {
-  const versionResult = await run('mpv', ['--version']);
+  const versionResult = await spawnAndCollect('mpv', ['--version']);
   if (versionResult.code === null) {
     return {
       name: 'mpv',
@@ -115,7 +100,7 @@ export async function checkYtDlp(platform) {
     };
   }
 
-  const versionResult = await run('yt-dlp', ['--version']);
+  const versionResult = await spawnAndCollect('yt-dlp', ['--version']);
   const currentVersion = versionResult.stdout.trim() || 'unknown';
 
   if (installs.length > 1) {
@@ -127,7 +112,7 @@ export async function checkYtDlp(platform) {
     };
   }
 
-  const updateResult = await run('yt-dlp', ['-U']);
+  const updateResult = await spawnAndCollect('yt-dlp', ['-U']);
   const { latest, blockedBySelfUpdateGuard } = parseUpdateOutput(`${updateResult.stdout}\n${updateResult.stderr}`);
 
   if (latest && latest !== currentVersion) {
