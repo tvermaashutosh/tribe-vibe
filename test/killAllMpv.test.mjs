@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { killAllByExactName } from '../src/player/killAllMpv.js';
+import { getPlatform } from '../src/platform/index.js';
 
 // A copy of the real `sleep` binary, renamed — confirmed live that this
 // matters: a #!/bin/sh script's actual process name (what pgrep -x sees) is
@@ -30,7 +31,7 @@ const isWindows = process.platform === 'win32';
 // pid (or times out) removes the race entirely instead of guessing a number.
 async function killAllByExactNameEventually(name, { maxAttempts = 30, intervalMs = 100 } = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = await killAllByExactName(name);
+    const result = await killAllByExactName(name, getPlatform());
     if (result.killed.length > 0 || result.alreadyGone.length > 0) return result;
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
@@ -69,7 +70,7 @@ test(
     // there's nothing to gain from waiting longer to prove the negative.
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const { killed, alreadyGone, stillRunning } = await killAllByExactName(`tribevibe-test-${process.pid}-nonexistent`);
+    const { killed, alreadyGone, stillRunning } = await killAllByExactName(`tribevibe-test-${process.pid}-nonexistent`, getPlatform());
 
     assert.deepEqual(killed, []);
     assert.deepEqual(alreadyGone, []);
@@ -80,8 +81,21 @@ test(
 );
 
 test('killAllByExactName returns empty arrays, does not throw, when nothing matches', async () => {
-  const result = await killAllByExactName(`tribevibe-test-${process.pid}-definitely-nothing`);
+  const result = await killAllByExactName(`tribevibe-test-${process.pid}-definitely-nothing`, getPlatform());
   assert.deepEqual(result, { killed: [], alreadyGone: [], stillRunning: [] });
+});
+
+// The actual fix: enumeration is delegated to platform.findProcessPidsByExactName
+// now, not a process.platform === 'win32' check baked in here — a fake
+// platform proves it by returning a made-up pid that was never really
+// spawned. killAllByExactName must try to signal exactly that pid (and
+// report it alreadyGone, since it doesn't really exist) rather than ever
+// calling any real OS process-enumeration tool itself.
+test('killAllByExactName uses whatever the platform adapter finds, not its own enumeration', async () => {
+  const fakePlatform = { findProcessPidsByExactName: () => [999999] };
+  const result = await killAllByExactName('irrelevant-name', fakePlatform);
+  assert.deepEqual(result.alreadyGone, [999999]);
+  assert.deepEqual(result.killed, []);
 });
 
 // Bug: killAllByExactName used to report "killed" the instant SIGTERM was
@@ -123,7 +137,7 @@ test(
       }
       assert.ok(fs.existsSync(readyMarker), 'the child never signaled it was ready');
 
-      const { killed, alreadyGone, stillRunning } = await killAllByExactName(name);
+      const { killed, alreadyGone, stillRunning } = await killAllByExactName(name, getPlatform());
 
       assert.deepEqual(killed, []);
       assert.deepEqual(alreadyGone, []);
