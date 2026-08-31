@@ -58,7 +58,7 @@ export default function Playlists({ ctx, onBack }) {
   if (mode === 'list') {
     const items = [
       ...playlists.map((playlist) => ({
-        label: `${playlist.name}  (${playlist.songs.length} songs)`,
+        label: `${playlist.name}  →  ${playlist.songs.length} songs`,
         value: playlist.name,
       })),
       ...(playlists.length > 0 ? [DIVIDER_ITEM] : []),
