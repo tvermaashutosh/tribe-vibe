@@ -25,11 +25,31 @@ function readLogTail() {
   }
 }
 
-// Off by default — zero cost in normal use. A real user or CI run never sets
-// TRIBE_VIBE_TRACE, so this must be true without any setup here either.
+// On by default — a real user or CI run never sets TRIBE_VIBE_TRACE, so
+// this must trace without any setup here either.
 test(
-  'trace() writes nothing when TRIBE_VIBE_TRACE is unset',
+  'trace() appends a timestamped line when TRIBE_VIBE_TRACE is unset (on by default)',
   withEnv(undefined, () => {
+    const marker = `trace-test: unset-env marker ${Date.now()}-${Math.random()}`;
+    trace(marker);
+    const contents = readLogTail();
+    assert.match(contents, new RegExp(`\\d{4}-\\d{2}-\\d{2}T.*${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  }),
+);
+
+test(
+  'trace() appends a timestamped line when TRIBE_VIBE_TRACE is set to anything other than "0"',
+  withEnv('yes-please', () => {
+    const marker = `trace-test: non-zero-value marker ${Date.now()}-${Math.random()}`;
+    trace(marker);
+    const contents = readLogTail();
+    assert.match(contents, new RegExp(`\\d{4}-\\d{2}-\\d{2}T.*${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  }),
+);
+
+test(
+  'trace() writes nothing when TRIBE_VIBE_TRACE=0 (the opt-out)',
+  withEnv('0', () => {
     const before = readLogTail();
     trace('trace-test: should not appear');
     const after = readLogTail();
@@ -38,28 +58,8 @@ test(
 );
 
 test(
-  'trace() writes nothing when TRIBE_VIBE_TRACE is set to anything other than "1"',
-  withEnv('true', () => {
-    const before = readLogTail();
-    trace('trace-test: should not appear either');
-    const after = readLogTail();
-    assert.equal(after, before);
-  }),
-);
-
-test(
-  'trace() appends a timestamped line when TRIBE_VIBE_TRACE=1',
-  withEnv('1', () => {
-    const marker = `trace-test: unique marker ${Date.now()}-${Math.random()}`;
-    trace(marker);
-    const contents = readLogTail();
-    assert.match(contents, new RegExp(`\\d{4}-\\d{2}-\\d{2}T.*${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
-  }),
-);
-
-test(
   'trace() never throws, even if writing the log fails',
-  withEnv('1', () => {
+  withEnv(undefined, () => {
     const original = fs.appendFileSync;
     fs.appendFileSync = () => {
       throw new Error('simulated disk failure');
