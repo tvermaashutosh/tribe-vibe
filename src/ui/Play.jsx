@@ -105,6 +105,7 @@ export default function Play({ ctx, onBack }) {
           playlistName: intent.playlistName,
           loop: intent.modifiers?.loop,
           onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
+          onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
         }),
       );
       return;
