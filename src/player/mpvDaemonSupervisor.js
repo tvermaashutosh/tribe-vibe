@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
+import { MPV_BINARY } from '../constants.js';
 
 // Singleton/Supervisor: exactly one mpv daemon per session. Checks whether
 // the IPC socket is already alive before spawning — never risks two
@@ -47,7 +48,7 @@ export class MpvDaemonSupervisor {
   // not something tribe-vibe sets on its behalf.
   _spawn() {
     const args = ['--idle=yes', '--no-video', `--input-ipc-server=${this.platform.getMpvSocketPath()}`];
-    const child = spawn('mpv', args, { detached: true, stdio: 'ignore' });
+    const child = spawn(MPV_BINARY, args, { detached: true, stdio: 'ignore' });
     // Without this, a missing `mpv` binary throws an unhandled 'error' event
     // and crashes the whole process instead of letting ensureRunning()'s
     // poll-then-timeout produce the friendly "is mpv installed?" message.
