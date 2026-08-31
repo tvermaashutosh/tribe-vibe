@@ -80,6 +80,14 @@ Aliases, playlists, and settings live as plain JSON under your OS config directo
 - A pinned song can go dead later (takedown, region lock) — you'll get a clear error and a chance to re-pick.
 - A long playlist downloads every song, one at a time, before playback starts — the terminal sits idle until that finishes, since nothing plays until everything's ready.
 
+## Debugging
+
+```
+TRIBE_VIBE_TRACE=1 tv <whatever you're trying to reproduce>
+```
+
+Traces the full lifecycle of a play (download → foreground mpv → terminal restore → exit) and the background daemon's own IPC to a log file under your OS temp directory (`tribe-vibe-debug.log`) — exactly the chain that's hardest to reason about after the fact, since mpv and Ink both take over stdio/raw-mode at different points, leaving nothing in a normal terminal to look back at once something goes wrong. Off by default, zero cost until you turn it on.
+
 ## Testing
 
 ```
