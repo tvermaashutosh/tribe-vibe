@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import stringWidth from 'string-width';
 import { alignColumns } from '../src/ui/alignColumns.js';
 
 test('alignColumns returns an empty array for no rows', () => {
@@ -39,6 +40,29 @@ test('alignColumns never truncates — the longest value in a column is untouche
 test('alignColumns leaves a single row unchanged (its own values are already the widest)', () => {
   const rows = [['solo', '→', 'value', '(song)']];
   assert.deepEqual(alignColumns(rows), rows);
+});
+
+test('alignColumns measures CJK characters as 2 terminal columns wide, not 1 — the exact bug that shipped', () => {
+  // '뚜두뚜두' is 4 Hangul syllables — 4 in raw JS .length, but 8 terminal
+  // columns wide. Padding on .length alone under-pads this row by 4
+  // columns, leaving the next column (and everything after it) visibly
+  // shifted left of every other row. Confirmed live in a real run.
+  const cjkTitle = "BLACKPINK - '뚜두뚜두 (DDU-DU DDU-DU)' M/V";
+  const plainTitle = "BLACKPINK - 'Pink Venom' M/V";
+  const rows = [
+    ['tt', '→', cjkTitle, '(song)'],
+    ['pv', '→', plainTitle, '(song)'],
+  ];
+
+  const result = alignColumns(rows);
+
+  // Column 2's rendered width — not its .length — must match across rows,
+  // so column 3 ("(song)") starts at the same terminal column for both.
+  assert.equal(stringWidth(result[0][2]), stringWidth(result[1][2]));
+  // Nothing truncated — the full original text is still in there, just
+  // followed by however many spaces close the rendered-width gap.
+  assert.ok(result[0][2].startsWith(cjkTitle));
+  assert.ok(result[1][2].startsWith(plainTitle));
 });
 
 test('alignColumns handles more than two rows, taking the max across all of them, not just the first two', () => {
