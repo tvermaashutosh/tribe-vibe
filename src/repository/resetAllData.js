@@ -7,13 +7,15 @@ import { DEFAULT_SETTINGS } from '../constants.js';
 // own OS Downloads folder, borrowed only as an export destination, not
 // storage tribe-vibe owns; wiping it would delete files that have nothing to
 // do with this app.
-export function resetAllData({ aliasRepo, playlistRepo, settings, saveSettings, platform }) {
+export function resetAllData({ aliasRepo, playlistRepo, saveSettings, platform }) {
   aliasRepo.clear();
   playlistRepo.clear();
 
-  const defaults = { ...DEFAULT_SETTINGS };
-  saveSettings(defaults);
-  Object.assign(settings, defaults);
+  // saveSettings mutates its own settings object in place (see
+  // SettingsRepository.save) — every screen holding that same reference
+  // sees this reset too, without resetAllData needing its own copy to
+  // separately patch.
+  saveSettings({ ...DEFAULT_SETTINGS });
 
   fs.rmSync(platform.getCacheDir(), { recursive: true, force: true });
 }

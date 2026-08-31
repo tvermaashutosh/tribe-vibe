@@ -27,16 +27,18 @@ test('resetAllData clears aliases, playlists, resets settings to defaults, and d
   aliasRepo.addArtistAlias(['ts'], 'Taylor Swift', tokenRegistry);
   playlistRepo.create('focus', tokenRegistry);
 
-  const settings = { top: 20 };
+  // resetAllData no longer takes/mutates its own settings object — that
+  // responsibility lives entirely in SettingsRepository.save now (see
+  // settingsRepository.test.mjs), so this only needs to prove resetAllData
+  // hands it the right defaults.
   const saved = [];
   const saveSettings = (next) => saved.push(next);
 
-  resetAllData({ aliasRepo, playlistRepo, settings, saveSettings, platform: fakePlatform(cacheDir) });
+  resetAllData({ aliasRepo, playlistRepo, saveSettings, platform: fakePlatform(cacheDir) });
 
   assert.deepEqual(aliasRepo.all(), []);
   assert.deepEqual(playlistRepo.all(), []);
   assert.deepEqual(saved, [{ top: 5 }]);
-  assert.deepEqual(settings, { top: 5 });
   assert.equal(fs.existsSync(cacheDir), false);
 });
 
@@ -48,9 +50,8 @@ test('resetAllData never touches anything outside the cache dir it was given', (
 
   const aliasRepo = new AliasRepository(configDir);
   const playlistRepo = new PlaylistRepository(configDir);
-  const settings = { top: 5 };
 
-  resetAllData({ aliasRepo, playlistRepo, settings, saveSettings: () => {}, platform: fakePlatform(cacheDir) });
+  resetAllData({ aliasRepo, playlistRepo, saveSettings: () => {}, platform: fakePlatform(cacheDir) });
 
   assert.ok(fs.existsSync(path.join(unrelatedDir, 'not-tribe-vibe.txt')));
 });
