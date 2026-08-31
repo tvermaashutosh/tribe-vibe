@@ -224,6 +224,91 @@ test(
   }),
 );
 
+// Bug: one bad song (deleted from YouTube, a genuine download failure) used
+// to abort the entire playlist play, discarding every song already
+// downloaded. This is the actual reported scenario: a 10-song playlist
+// where song #3 fails — the other 9 should still play.
+test(
+  'playPlaylistForeground skips a song whose download fails, and still plays the rest',
+  withArgvCapturingMpv(async (argvFile) => {
+    const playlistRepo = {
+      all: () => [
+        {
+          name: 'focus',
+          songs: [
+            { videoId: 'a', title: 'Song A' },
+            { videoId: 'bad', title: 'Deleted Song' },
+            { videoId: 'c', title: 'Song C' },
+          ],
+        },
+      ],
+    };
+    const resolver = {
+      downloadAudio: async (videoId) => {
+        if (videoId === 'bad') throw new Error('Video unavailable');
+        return `/cache/${videoId}.m4a`;
+      },
+      toWatchUrl: (videoId) => `https://www.youtube.com/watch?v=${videoId}`,
+    };
+
+    const failed = [];
+    await playPlaylistForeground({
+      resolver,
+      platform: fakePlatform(),
+      playlistRepo,
+      playlistName: 'focus',
+      onSongFailed: (song, err) => failed.push({ title: song.title, message: err.message }),
+    });
+
+    assert.deepEqual(failed, [{ title: 'Deleted Song', message: 'Video unavailable' }]);
+    const argv = fs.readFileSync(argvFile, 'utf8');
+    assert.match(argv, /\/cache\/a\.m4a/);
+    assert.match(argv, /\/cache\/c\.m4a/);
+    assert.doesNotMatch(argv, /bad/);
+  }),
+);
+
+test(
+  'playPlaylistForeground works with no onSongFailed given — the song is still skipped, not fatal',
+  withArgvCapturingMpv(async (argvFile) => {
+    const playlistRepo = {
+      all: () => [{ name: 'focus', songs: [{ videoId: 'a', title: 'Song A' }, { videoId: 'bad', title: 'Deleted Song' }] }],
+    };
+    const resolver = {
+      downloadAudio: async (videoId) => {
+        if (videoId === 'bad') throw new Error('Video unavailable');
+        return `/cache/${videoId}.m4a`;
+      },
+      toWatchUrl: (videoId) => `https://www.youtube.com/watch?v=${videoId}`,
+    };
+
+    await playPlaylistForeground({ resolver, platform: fakePlatform(), playlistRepo, playlistName: 'focus' });
+
+    const argv = fs.readFileSync(argvFile, 'utf8');
+    assert.match(argv, /\/cache\/a\.m4a/);
+  }),
+);
+
+test(
+  'playPlaylistForeground throws a clear error when every song fails to download — never hands mpv an empty file list',
+  withFakeMpv(async () => {
+    const playlistRepo = {
+      all: () => [{ name: 'focus', songs: [{ videoId: 'a', title: 'Song A' }, { videoId: 'b', title: 'Song B' }] }],
+    };
+    const resolver = {
+      downloadAudio: async () => {
+        throw new Error('network down');
+      },
+      toWatchUrl: (videoId) => `https://www.youtube.com/watch?v=${videoId}`,
+    };
+
+    await assert.rejects(
+      () => playPlaylistForeground({ resolver, platform: fakePlatform(), playlistRepo, playlistName: 'focus' }),
+      /every song failed to download/,
+    );
+  }),
+);
+
 test(
   'playPlaylistForeground passes the whole playlist (name + songs) to onReady, not just its name',
   withFakeMpv(async () => {

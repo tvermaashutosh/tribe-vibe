@@ -36,7 +36,16 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // deserve the same "tv error:" + nonzero exit as a genuine crash.
 // onEmpty lets a caller handle it gracefully instead; a caller that doesn't
 // pass one keeps the old throw, so nothing that already relies on it breaks.
-export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onEmpty, onReady }) {
+//
+// One song's download failing (deleted from YouTube, a genuine network
+// error after its own retries) doesn't deserve to take the other 9 down
+// with it, discarding everything already downloaded — it's skipped instead,
+// same "nothing to play here" spirit as onEmpty above. onSongFailed lets a
+// caller report which ones were skipped and why; a caller that doesn't pass
+// one just gets the skip silently (still traced) rather than a crash either
+// way. Only if every song fails is there genuinely nothing to play, which
+// throws same as the empty-playlist case does when onEmpty isn't given.
+export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onEmpty, onSongFailed, onReady }) {
   const playlist = playlistRepo.all().find((entry) => entry.name === playlistName);
   if (!playlist) throw new Error(`No playlist named "${playlistName}"`);
   if (playlist.songs.length === 0) {
@@ -48,9 +57,15 @@ export async function playPlaylistForeground({ resolver, platform, playlistRepo,
 
   const files = [];
   for (const song of playlist.songs) {
-    const path = await resolver.downloadAudio(song.videoId, platform.getCacheDir());
-    files.push({ path, title: song.title });
+    try {
+      const path = await resolver.downloadAudio(song.videoId, platform.getCacheDir());
+      files.push({ path, title: song.title });
+    } catch (err) {
+      trace(`playPlaylistForeground: skipping "${song.title}" (${song.videoId}) — download failed: ${err.message}`);
+      if (onSongFailed) onSongFailed(song, err);
+    }
   }
+  if (files.length === 0) throw new Error(`Playlist "${playlistName}": every song failed to download`);
   if (onReady) onReady(playlist);
   await playForeground({ files, loop, platform });
 }
