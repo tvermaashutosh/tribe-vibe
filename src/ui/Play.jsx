@@ -8,8 +8,7 @@ import { formatPlaylistSongList } from '../player/playlistSongList.js';
 import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
 import { theme } from './theme.js';
 import { formatCliStatus } from './statusLevel.js';
-import { trace } from '../debugTrace.js';
-import { exitCleanly } from './exitCleanly.js';
+import { handOffToForeground } from './handOffToForeground.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
@@ -40,27 +39,6 @@ export default function Play({ ctx, onBack }) {
 
   const browseItems = buildBrowseItems(ctx.aliasRepo, ctx.playlistRepo);
 
-  // Mirrors bin/tv.js's own top-level error format — an error here is
-  // handled exactly like an error from the equivalent typed command would be,
-  // since by this point the Ink UI is already gone and there's nothing left
-  // to return to.
-  const handOffToForeground = async (playFn) => {
-    trace('handOffToForeground: calling unmountMenu()');
-    ctx.unmountMenu();
-    trace('handOffToForeground: unmountMenu() returned, calling playFn()');
-    try {
-      await playFn();
-      trace('handOffToForeground: playFn() resolved, calling closeDaemon()');
-      ctx.closeDaemon();
-      trace('handOffToForeground: closeDaemon() returned, calling exitCleanly(0)');
-      exitCleanly(ctx.platform);
-    } catch (err) {
-      trace(`handOffToForeground: caught error: ${err.message}`);
-      console.error(formatCliStatus('error', `tv error: ${err.message}`));
-      exitCleanly(ctx.platform, 1);
-    }
-  };
-
   // The one place both the typed box and the browse list end up — same
   // branching the typed CLI does for song/playlist/search, so an item picked
   // from the list plays exactly the way typing its token would.
@@ -73,7 +51,7 @@ export default function Play({ ctx, onBack }) {
 
     if (intent.kind === 'song') {
       setBusy(true);
-      handOffToForeground(() =>
+      handOffToForeground(ctx, () =>
         playSongForeground({
           resolver: ctx.resolver,
           platform: ctx.platform,
@@ -97,7 +75,7 @@ export default function Play({ ctx, onBack }) {
         return;
       }
       setBusy(true);
-      handOffToForeground(() =>
+      handOffToForeground(ctx, () =>
         playPlaylistForeground({
           resolver: ctx.resolver,
           platform: ctx.platform,
@@ -197,7 +175,7 @@ export default function Play({ ctx, onBack }) {
       player={ctx.player}
       onConfirm={(candidate) => {
         setBusy(true);
-        handOffToForeground(() =>
+        handOffToForeground(ctx, () =>
           playSongForeground({
             resolver: ctx.resolver,
             platform: ctx.platform,
