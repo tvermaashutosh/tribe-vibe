@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { trace } from '../debugTrace.js';
-import { SIGNAL_EXIT_CODES } from '../constants.js';
+import { SIGNAL_EXIT_CODES, MPV_BINARY } from '../constants.js';
 
 // Guards only the window between "mpv just exited" and this process's own
 // controlled exit — confirmed by tracing a real hang that this process can
@@ -76,7 +76,7 @@ export function playForeground({ files, loop, platform }) {
 
   trace(`playForeground: spawning mpv, args=${JSON.stringify(args)}`);
   return new Promise((resolve, reject) => {
-    const child = spawn('mpv', args, { stdio: 'inherit' });
+    const child = spawn(MPV_BINARY, args, { stdio: 'inherit' });
     child.once('error', (err) => {
       trace(`playForeground: mpv spawn error: ${err.message}`);
       // tswift's own dependency check names the exact install command for
