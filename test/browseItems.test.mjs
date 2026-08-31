@@ -61,15 +61,41 @@ test('buildBrowseItems returns an empty list when there is nothing to browse', (
   assert.deepEqual(buildBrowseItems(fakeAliasRepo([]), fakePlaylistRepo([])), []);
 });
 
-test('buildBrowseItems keeps the title/value in full — Ink wraps a label onto another line rather than losing any of it', () => {
+test('buildBrowseItems keeps the title/value in full, padded to line up — nothing is ever truncated', () => {
   const aliasRepo = fakeAliasRepo([
     { token: 'tt', type: 'song', videoId: 'a', title: 'A very long song title that would definitely wrap' },
     { token: 'ts', type: 'artist', value: 'A very long canonical artist name that would definitely wrap' },
   ]);
   const items = buildBrowseItems(aliasRepo, fakePlaylistRepo([]));
 
-  assert.equal(items[0].label, 'tt  →  A very long song title that would definitely wrap  (song)');
+  // The artist's value is longer, so the song's value column is padded out
+  // to match it — its full, untruncated text is still there, just followed
+  // by trailing spaces so "(song)" lines up under where "(artist)" starts.
+  assert.equal(
+    items[0].label,
+    `tt  →  ${'A very long song title that would definitely wrap'.padEnd('A very long canonical artist name that would definitely wrap'.length)}  (song)`,
+  );
   assert.equal(items[1].label, 'ts  →  A very long canonical artist name that would definitely wrap  (artist)');
+});
+
+test('buildBrowseItems columnar-aligns token, value, and "(type)" across every row — song, playlist, and artist rows alike', () => {
+  const aliasRepo = fakeAliasRepo([
+    { token: 'tt', type: 'song', videoId: 'a', title: 'A Song' },
+    { token: 'a-very-long-token', type: 'artist', value: 'X' },
+  ]);
+  const playlistRepo = fakePlaylistRepo([{ name: 'p', songs: [{ videoId: 'z' }] }]);
+
+  const items = buildBrowseItems(aliasRepo, playlistRepo);
+  const arrowStarts = items.map((item) => item.label.indexOf('→'));
+  const parenStarts = items.map((item) => item.label.indexOf('('));
+
+  // Every row's "→" starts at the same column — the token column is as wide
+  // as 'a-very-long-token', the longest token across all three kinds.
+  assert.equal(new Set(arrowStarts).size, 1);
+  // Every row's "(type)" starts at the same column too.
+  assert.equal(new Set(parenStarts).size, 1);
+  // Confirmed genuinely widened, not a coincidental equal-width fluke.
+  assert.equal(arrowStarts[0], 'a-very-long-token'.length + 2);
 });
 
 test('buildBrowseItems sorts each chunk most-recently-touched first, independent of storage order', () => {

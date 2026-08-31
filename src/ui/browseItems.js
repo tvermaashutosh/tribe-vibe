@@ -1,6 +1,7 @@
 // Pulled out of Play.jsx, plain logic with no JSX, so it's testable without
 // needing a real TTY (Ink components can't be unit-tested here).
 import { sortByRecency } from './sortByRecency.js';
+import { alignColumns } from './alignColumns.js';
 
 // Every artist alias, song alias, and playlist, in one browsable list,
 // grouped song -> playlist -> artist (most-specific/most-likely-to-be-what-
@@ -12,30 +13,39 @@ import { sortByRecency } from './sortByRecency.js';
 // place they're shown alongside aliases, since it's a discovery aid for what
 // you can type, not a management screen.
 //
-// Every label is "token → value (type)" in full — Ink wraps it onto as many
-// lines as it needs when it doesn't fit, same as any other text in the app.
+// Every label is "token → value (type)" columnar-aligned across the WHOLE
+// list — the token column is as wide as the longest token among every song,
+// playlist, and artist row combined, same for the value column before it,
+// so "→" and "(" both start at the same left position on every row, no
+// matter which of the three kinds a given row is. Nothing is ever
+// truncated to fit — a column just grows to fit its longest value.
 export function buildBrowseItems(aliasRepo, playlistRepo) {
   const aliases = aliasRepo.all();
-  const songItems = sortByRecency(aliases.filter((alias) => alias.type === 'song')).map((alias) => ({
+  const songs = sortByRecency(aliases.filter((alias) => alias.type === 'song')).map((alias) => ({
     itemType: 'song',
     token: alias.token,
-    label: `${alias.token}  →  ${alias.title}  (song)`,
+    displayValue: alias.title,
+    displayType: 'song',
     videoId: alias.videoId,
     title: alias.title,
   }));
-  const playlistItems = sortByRecency(playlistRepo.all()).map((playlist) => ({
+  const playlists = sortByRecency(playlistRepo.all()).map((playlist) => ({
     itemType: 'playlist',
     token: playlist.name,
-    label: `${playlist.name}  →  ${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}  (playlist)`,
+    displayValue: `${playlist.songs.length} song${playlist.songs.length === 1 ? '' : 's'}`,
+    displayType: 'playlist',
     playlistName: playlist.name,
   }));
-  const artistItems = sortByRecency(aliases.filter((alias) => alias.type === 'artist')).map((alias) => ({
+  const artists = sortByRecency(aliases.filter((alias) => alias.type === 'artist')).map((alias) => ({
     itemType: 'artist',
     token: alias.token,
-    label: `${alias.token}  →  ${alias.value}  (artist)`,
+    displayValue: alias.value,
+    displayType: 'artist',
     artistName: alias.value,
   }));
-  return [...songItems, ...playlistItems, ...artistItems];
+  const entries = [...songs, ...playlists, ...artists];
+  const columns = alignColumns(entries.map((entry) => [entry.token, '→', entry.displayValue, `(${entry.displayType})`]));
+  return entries.map(({ displayValue, displayType, ...entry }, i) => ({ ...entry, label: columns[i].join('  ') }));
 }
 
 // Selecting an item from the browse list plays it exactly as if you'd typed
