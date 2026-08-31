@@ -56,9 +56,11 @@ export default function Settings({ ctx, onBack }) {
             // saved instead, with a warning explaining why.
             const isValid = value.trim() !== '' && Number.isInteger(parsed) && parsed > 0;
             if (isValid) {
-              const next = { ...ctx.settings, [editing]: parsed };
-              ctx.saveSettings(next);
-              ctx.settings[editing] = parsed;
+              // saveSettings mutates ctx.settings in place (see
+              // SettingsRepository.save) — every other screen holding the
+              // same object reference sees this update too, no manual
+              // re-patch needed here anymore.
+              ctx.saveSettings({ ...ctx.settings, [editing]: parsed });
             } else {
               showStatus(`"${value}" isn't a positive whole number — kept ${editing}: ${ctx.settings[editing]}`, 'warning');
             }
@@ -95,7 +97,6 @@ export default function Settings({ ctx, onBack }) {
               resetAllData({
                 aliasRepo: ctx.aliasRepo,
                 playlistRepo: ctx.playlistRepo,
-                settings: ctx.settings,
                 saveSettings: ctx.saveSettings,
                 platform: ctx.platform,
               });
