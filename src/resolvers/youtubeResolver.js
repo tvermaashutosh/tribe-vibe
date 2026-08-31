@@ -1,6 +1,6 @@
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnAndCollect } from '../spawnAndCollect.js';
 
 // Chain of Responsibility: YouTube's serving behavior for direct/streamed
 // URLs shifts over time (which player clients still get plain https URLs,
@@ -71,40 +71,22 @@ export class YoutubeResolver {
     return new Error(`yt-dlp is not available — is it installed? (${err.message}) Try: ${this.platform.getInstallInstructions()}`);
   }
 
-  search(query, top) {
-    return new Promise((resolve, reject) => {
-      const proc = spawn('yt-dlp', [
-        `ytsearch${top}:${query}`,
-        '--dump-json',
-        '--flat-playlist',
-        '--no-warnings',
-        ...NETWORK_TIMEOUT_ARGS,
-      ]);
-      let stdout = '';
-      let stderr = '';
-      proc.stdout.on('data', (chunk) => {
-        stdout += chunk;
-      });
-      proc.stderr.on('data', (chunk) => {
-        stderr += chunk;
-      });
-      proc.on('error', (err) => {
-        reject(this.missingBinaryError(err));
-      });
-      proc.on('close', (code) => {
-        if (code !== 0) {
-          reject(enrichError(stderr, 'yt-dlp search failed', this.platform.getYtDlpConfigHint()));
-          return;
-        }
-        const results = stdout
-          .trim()
-          .split('\n')
-          .filter(Boolean)
-          .map((line) => JSON.parse(line))
-          .map((entry) => ({ videoId: entry.id, title: entry.title, duration: entry.duration }));
-        resolve(results);
-      });
-    });
+  async search(query, top) {
+    const { code, stdout, stderr, spawnError } = await spawnAndCollect('yt-dlp', [
+      `ytsearch${top}:${query}`,
+      '--dump-json',
+      '--flat-playlist',
+      '--no-warnings',
+      ...NETWORK_TIMEOUT_ARGS,
+    ]);
+    if (spawnError) throw this.missingBinaryError(spawnError);
+    if (code !== 0) throw enrichError(stderr, 'yt-dlp search failed', this.platform.getYtDlpConfigHint());
+    return stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .map((entry) => ({ videoId: entry.id, title: entry.title, duration: entry.duration }));
   }
 
   // Downloads the audio to a real local file and hands mpv that instead of a
@@ -112,44 +94,26 @@ export class YoutubeResolver {
   // header-mismatch and pipe-format-detection failures in practice; a plain
   // local file sidesteps all of that. Cached by videoId under cacheDir since
   // aliases/playlists are meant to be replayed, not searched fresh each time.
-  downloadAudio(videoId, cacheDir) {
-    return new Promise((resolve, reject) => {
-      fs.mkdirSync(cacheDir, { recursive: true });
+  async downloadAudio(videoId, cacheDir) {
+    fs.mkdirSync(cacheDir, { recursive: true });
 
-      const cached = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));
-      if (cached) {
-        resolve(path.join(cacheDir, cached));
-        return;
-      }
+    const cached = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));
+    if (cached) return path.join(cacheDir, cached);
 
-      const proc = spawn('yt-dlp', [
-        '-f',
-        'bestaudio/best',
-        '--no-warnings',
-        '-o',
-        path.join(cacheDir, '%(id)s.%(ext)s'),
-        ...NETWORK_TIMEOUT_ARGS,
-        this.toWatchUrl(videoId),
-      ]);
-      let stderr = '';
-      proc.stderr.on('data', (chunk) => {
-        stderr += chunk;
-      });
-      proc.on('error', (err) => {
-        reject(this.missingBinaryError(err));
-      });
-      proc.on('close', (code) => {
-        if (code !== 0) {
-          reject(enrichError(stderr, 'yt-dlp download failed', this.platform.getYtDlpConfigHint()));
-          return;
-        }
-        const downloaded = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));
-        if (!downloaded) {
-          reject(new Error('Download finished but no file was produced — see the yt-dlp output above.'));
-          return;
-        }
-        resolve(path.join(cacheDir, downloaded));
-      });
-    });
+    const { code, stderr, spawnError } = await spawnAndCollect('yt-dlp', [
+      '-f',
+      'bestaudio/best',
+      '--no-warnings',
+      '-o',
+      path.join(cacheDir, '%(id)s.%(ext)s'),
+      ...NETWORK_TIMEOUT_ARGS,
+      this.toWatchUrl(videoId),
+    ]);
+    if (spawnError) throw this.missingBinaryError(spawnError);
+    if (code !== 0) throw enrichError(stderr, 'yt-dlp download failed', this.platform.getYtDlpConfigHint());
+
+    const downloaded = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));
+    if (!downloaded) throw new Error('Download finished but no file was produced — see the yt-dlp output above.');
+    return path.join(cacheDir, downloaded);
   }
 }
