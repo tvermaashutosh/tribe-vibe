@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readJsonArray, writeJsonArrayAtomic } from './jsonStore.js';
+import { readJsonArray, writeJsonAtomic } from './jsonStore.js';
 import { assertValidToken } from './validateToken.js';
 
 // Playlists: {name, songs:[{videoId, title}]} — cross-artist by construction,
@@ -108,6 +108,6 @@ export class PlaylistRepository {
   }
 
   _save() {
-    writeJsonArrayAtomic(this.filePath, this.playlists);
+    writeJsonAtomic(this.filePath, this.playlists);
   }
 }
