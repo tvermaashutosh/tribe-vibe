@@ -13,9 +13,21 @@ import path from 'node:path';
 // prefixes its own message with "functionName: ..." for easy grep.
 export const LOG_PATH = path.join(os.tmpdir(), 'tribe-vibe-debug.log');
 
+// Truncated once per process, on this run's first trace() call — never left
+// to grow across runs forever, since tracing is on by default now for every
+// invocation, not just a deliberate one-off debug session. Every trace()
+// call within that same run still appends normally after that, which is
+// what actually captures a whole lifecycle (a single play needs several
+// lines, not one) — only the boundary between one run and the next resets.
+let truncatedThisRun = false;
+
 export function trace(msg) {
   if (process.env.TRIBE_VIBE_TRACE === '0') return;
   try {
+    if (!truncatedThisRun) {
+      fs.writeFileSync(LOG_PATH, '');
+      truncatedThisRun = true;
+    }
     fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${msg}\n`);
   } catch {
     // best-effort only

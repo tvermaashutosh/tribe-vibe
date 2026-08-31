@@ -71,3 +71,30 @@ test(
     }
   }),
 );
+
+// Bug this addresses: tracing is on by default now for every invocation,
+// not just a deliberate one-off debug session — appending forever would
+// grow the log unbounded across normal, ongoing use. A fresh import (cache
+// -busted with a query string, the standard technique for a genuinely
+// fresh module instance in a test) stands in for a real new `tv` process,
+// since debugTrace.js's own truncate-once state is otherwise shared for
+// the whole lifetime of one real process (or, here, one test run).
+test(
+  "a new run's first trace() call replaces the log, not appends to whatever a previous run left",
+  withEnv(undefined, async () => {
+    const { trace: freshTrace, LOG_PATH: freshLogPath } = await import(`../src/debugTrace.js?fresh=${Date.now()}-${Math.random()}`);
+    fs.writeFileSync(freshLogPath, 'stale content left behind by a previous run\n');
+
+    freshTrace('trace-test: first line of the new run');
+    const afterFirst = fs.readFileSync(freshLogPath, 'utf8');
+    assert.doesNotMatch(afterFirst, /stale content/);
+    assert.match(afterFirst, /first line of the new run/);
+
+    // A second call within the SAME run must still append, not truncate
+    // again — that's what actually captures a whole lifecycle.
+    freshTrace('trace-test: second line of the same new run');
+    const afterSecond = fs.readFileSync(freshLogPath, 'utf8');
+    assert.match(afterSecond, /first line of the new run/);
+    assert.match(afterSecond, /second line of the same new run/);
+  }),
+);
