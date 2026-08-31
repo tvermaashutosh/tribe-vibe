@@ -18,7 +18,11 @@ function fakeResolver() {
 }
 
 function fakePlatform() {
-  return { getCacheDir: () => '/cache', getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+  return {
+    getCacheDir: () => '/cache',
+    getInstallInstructions: () => 'brew install mpv yt-dlp skhd',
+    canRestoreTerminal: () => true,
+  };
 }
 
 function withFakeMpv(fn) {

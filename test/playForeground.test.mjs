@@ -9,10 +9,17 @@ import { playForeground } from '../src/player/playForeground.js';
 
 const SIGNAL_GUARD_DRIVER = fileURLToPath(new URL('./helpers/signalGuardDriver.mjs', import.meta.url));
 
+// canRestoreTerminal: true matches this test machine's real behavior
+// (macOS/Linux) — the same value MacPlatform/LinuxPlatform's own method
+// returns, since these tests exercise the real stty-based restoration path.
+function fakePlatform() {
+  return { getInstallInstructions: () => 'brew install mpv yt-dlp skhd', canRestoreTerminal: () => true };
+}
+
 test('playForeground rejects clearly when mpv is not on PATH, naming the exact install command', async () => {
   const originalPath = process.env.PATH;
   process.env.PATH = '/definitely/not/a/real/path';
-  const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+  const platform = fakePlatform();
   try {
     await assert.rejects(
       () => playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform }),
@@ -44,7 +51,7 @@ test('playForeground pauses process.stdin before spawning mpv, when stdin looks 
     return process.stdin;
   };
   try {
-    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform: fakePlatform() });
     assert.equal(pauseCalled, true);
   } finally {
     process.env.PATH = originalPath;
@@ -68,7 +75,7 @@ test('playForeground skips pausing stdin when it is not a real tty', async () =>
     return process.stdin;
   };
   try {
-    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform: fakePlatform() });
     assert.equal(pauseCalled, false);
   } finally {
     process.env.PATH = originalPath;
@@ -88,7 +95,7 @@ test('playForeground resolves once the spawned process exits', async () => {
   const originalPath = process.env.PATH;
   process.env.PATH = `${dir}:${originalPath}`;
   try {
-    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform: fakePlatform() });
   } finally {
     process.env.PATH = originalPath;
   }
@@ -112,6 +119,7 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
         { path: '/cache/b.m4a', title: 'Song B' },
         { path: '/cache/c.m4a' },
       ],
+      platform: fakePlatform(),
     });
     const argv = fs.readFileSync(argvFile, 'utf8');
     assert.match(argv, /--\{ --force-media-title=Song A \/cache\/a\.m4a --\}/);
@@ -141,7 +149,7 @@ test('playForeground runs "stty sane" after mpv exits, when stdin looks like a r
   // path a real terminal session takes actually runs here.
   Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
   try {
-    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform: fakePlatform() });
     assert.equal(fs.readFileSync(sttyCallsFile, 'utf8').trim(), 'sane');
   } finally {
     process.env.PATH = originalPath;
@@ -199,7 +207,34 @@ test('playForeground skips "stty sane" entirely when stdin is not a real tty', a
   process.env.PATH = `${dir}:${originalPath}`;
   Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
   try {
-    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] });
+    await playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform: fakePlatform() });
+    assert.equal(fs.existsSync(sttyCallsFile), false);
+  } finally {
+    process.env.PATH = originalPath;
+    Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+  }
+});
+
+// The actual fix: whether stty gets attempted is decided by
+// platform.canRestoreTerminal() now, not a process.platform === 'win32'
+// check baked in here — a fake platform saying canRestoreTerminal: false
+// proves it, even with a real tty, which the old check alone couldn't
+// distinguish from "this OS just doesn't have stty."
+test('playForeground skips "stty sane" when the platform adapter says it cannot restore the terminal, even on a real tty', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  fs.writeFileSync(path.join(dir, 'mpv'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  const sttyCallsFile = path.join(dir, 'stty-calls.txt');
+  fs.writeFileSync(path.join(dir, 'stty'), `#!/bin/sh\necho "$@" >> "${sttyCallsFile}"\nexit 0\n`, { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  const originalIsTTY = process.stdin.isTTY;
+  process.env.PATH = `${dir}:${originalPath}`;
+  Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+  try {
+    await playForeground({
+      files: [{ path: '/tmp/does-not-matter.m4a' }],
+      platform: { canRestoreTerminal: () => false },
+    });
     assert.equal(fs.existsSync(sttyCallsFile), false);
   } finally {
     process.env.PATH = originalPath;

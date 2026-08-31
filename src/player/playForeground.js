@@ -13,10 +13,10 @@ import { SIGNAL_EXIT_CODES } from '../constants.js';
 // signal reaches mpv and this process at the same instant then, and running
 // stty sane concurrently with mpv still legitimately owning raw mode would
 // fight its own cleanup instead of helping.
-function guardVulnerableWindow() {
+function guardVulnerableWindow(platform) {
   const onSignal = (signal) => {
     trace(`playForeground: caught ${signal} in the post-mpv-exit window, restoring terminal before exit`);
-    if (process.platform !== 'win32' && process.stdin.isTTY) {
+    if (platform.canRestoreTerminal() && process.stdin.isTTY) {
       try {
         execFileSync('stty', ['sane'], { stdio: 'inherit' });
       } catch {
@@ -85,13 +85,13 @@ export function playForeground({ files, loop, platform }) {
     });
     child.once('exit', (code, signal) => {
       trace(`playForeground: mpv exited code=${code} signal=${signal}, calling restoreTerminal()`);
-      const unguard = guardVulnerableWindow();
+      const unguard = guardVulnerableWindow(platform);
       const finish = () => {
         unguard();
         trace('playForeground: vulnerable window closed, resolving playForeground promise');
         resolve();
       };
-      const restorePromise = restoreTerminal();
+      const restorePromise = restoreTerminal(platform);
       if (restorePromise) restorePromise.then(finish);
       else finish();
     });
@@ -107,9 +107,9 @@ export function playForeground({ files, loop, platform }) {
 // (it's what a shell itself does after every foreground job) — terminal
 // hygiene, not a reimplementation of any mpv control. Best-effort only: no
 // real tty (tests, some CI) or no `stty` (Windows) means nothing to restore.
-function restoreTerminal() {
+function restoreTerminal(platform) {
   trace(`restoreTerminal: platform=${process.platform} isTTY=${process.stdin.isTTY}`);
-  if (process.platform === 'win32' || !process.stdin.isTTY) {
+  if (!platform.canRestoreTerminal() || !process.stdin.isTTY) {
     trace('restoreTerminal: guard skipped, no stty spawned');
     return null;
   }

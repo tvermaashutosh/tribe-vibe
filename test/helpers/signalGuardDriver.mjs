@@ -6,6 +6,8 @@ import { playForeground } from '../../src/player/playForeground.js';
 
 Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
 
-playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }] }).then(() => {
+const platform = { canRestoreTerminal: () => true };
+
+playForeground({ files: [{ path: '/tmp/does-not-matter.m4a' }], platform }).then(() => {
   process.exit(0);
 });
