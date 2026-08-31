@@ -73,11 +73,23 @@ export async function run(argv) {
   // still works even for a process this session never tracked in the first
   // place (which a tracked-PID approach can't recover, by definition).
   if (flag === 'kill') {
-    const { killed, alreadyGone } = killAllMpv();
+    const { killed, alreadyGone, stillRunning } = await killAllMpv();
     if (killed.length > 0) {
       console.log(formatCliStatus('success', `Stopped ${killed.length} mpv process${killed.length === 1 ? '' : 'es'}: ${killed.join(', ')}`));
-    } else {
+    } else if (stillRunning.length === 0) {
       console.log(formatCliStatus('success', 'No mpv processes were running.'));
+    }
+    // SIGTERM was actually delivered but the process is still alive after
+    // the confirmation window — reported honestly instead of folded into
+    // "Stopped", which used to claim success the instant the signal sent,
+    // whether or not the process had actually died yet.
+    if (stillRunning.length > 0) {
+      console.log(
+        formatCliStatus(
+          'warning',
+          `Sent stop signal, but still running: ${stillRunning.join(', ')} — it may be ignoring it, or just slow to exit.`,
+        ),
+      );
     }
     if (alreadyGone.length > 0) trace(`cli.js: -kill found ${alreadyGone.length} pid(s) that were already gone: ${alreadyGone.join(', ')}`);
     return;
