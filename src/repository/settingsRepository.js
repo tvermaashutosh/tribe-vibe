@@ -23,8 +23,16 @@ export class SettingsRepository {
     return this.settings;
   }
 
+  // Mutates this.settings in place rather than reassigning it — cli.js
+  // hands the same object out once, by reference, as ctx.settings, and
+  // every screen (Play.jsx, Aliases.jsx, Playlists.jsx, ...) holds onto
+  // that same reference. Reassigning here would leave every one of them
+  // reading a stale object unless the caller separately re-patched it by
+  // hand after every save() — which used to be true, and easy to forget.
+  // save() is always handed a complete settings object (never a partial
+  // patch), so a plain Object.assign is enough to keep the two in sync.
   save(next) {
-    this.settings = next;
+    Object.assign(this.settings, next);
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const tmpPath = `${this.filePath}.tmp-${process.pid}`;
     fs.writeFileSync(tmpPath, JSON.stringify(this.settings, null, 2));
