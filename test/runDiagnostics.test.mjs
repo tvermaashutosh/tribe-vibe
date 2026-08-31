@@ -24,7 +24,7 @@ function withIsolatedPath(fn) {
 test(
   'checkHotkeyTool warns (not errors) and names the install fix when the tool is missing',
   withIsolatedPath(async () => {
-    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd', getExecutableExtension: () => '' };
     const result = await checkHotkeyTool(platform);
     assert.equal(result.status, 'warning');
     assert.equal(result.missing, true);
@@ -36,7 +36,7 @@ test(
   'checkHotkeyTool reports success and no missing flag when the tool is found',
   withIsolatedPath(async (dir) => {
     fs.writeFileSync(path.join(dir, 'skhd'), '#!/bin/sh\n', { mode: 0o755 });
-    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const platform = { getHotkeyToolName: () => 'skhd', getInstallInstructions: () => 'brew install mpv yt-dlp skhd', getExecutableExtension: () => '' };
     const result = await checkHotkeyTool(platform);
     assert.equal(result.status, 'success');
     assert.equal(result.missing, undefined);
@@ -51,10 +51,11 @@ test('findAllOnPath finds every matching binary across PATH, including duplicate
   fs.writeFileSync(path.join(dirB, 'yt-dlp'), '#!/bin/sh\n');
   // dirC deliberately has no yt-dlp — confirms it's not just returning every PATH dir
 
+  const fakePlatform = { getExecutableExtension: () => '' };
   const originalPath = process.env.PATH;
   process.env.PATH = [dirA, dirB, dirC].join(path.delimiter);
   try {
-    const found = findAllOnPath('yt-dlp');
+    const found = findAllOnPath('yt-dlp', fakePlatform);
     assert.deepEqual(found, [path.join(dirA, 'yt-dlp'), path.join(dirB, 'yt-dlp')]);
   } finally {
     process.env.PATH = originalPath;
@@ -63,10 +64,30 @@ test('findAllOnPath finds every matching binary across PATH, including duplicate
 
 test('findAllOnPath returns empty when nothing matches', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-empty-'));
+  const fakePlatform = { getExecutableExtension: () => '' };
   const originalPath = process.env.PATH;
   process.env.PATH = dir;
   try {
-    assert.deepEqual(findAllOnPath('definitely-not-a-real-binary'), []);
+    assert.deepEqual(findAllOnPath('definitely-not-a-real-binary', fakePlatform), []);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+// The actual fix: the executable-name suffix comes from the platform
+// adapter now, not a process.platform === 'win32' ternary baked in here —
+// a fake platform claiming a made-up '.fake' extension proves it, since a
+// real 'win32' check could never produce that suffix.
+test('findAllOnPath appends whatever extension the platform adapter gives it, not a hardcoded one', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-ext-'));
+  fs.writeFileSync(path.join(dir, 'yt-dlp.fake'), '#!/bin/sh\n');
+  fs.writeFileSync(path.join(dir, 'yt-dlp'), '#!/bin/sh\n'); // no-suffix version must NOT match
+
+  const fakePlatform = { getExecutableExtension: () => '.fake' };
+  const originalPath = process.env.PATH;
+  process.env.PATH = dir;
+  try {
+    assert.deepEqual(findAllOnPath('yt-dlp', fakePlatform), [path.join(dir, 'yt-dlp.fake')]);
   } finally {
     process.env.PATH = originalPath;
   }
@@ -135,6 +156,11 @@ test(
     const windowsStylePlatform = {
       getInstallInstructions: () => 'scoop install mpv yt-dlp autohotkey',
       getYtDlpUpgradeInstructions: () => 'scoop update yt-dlp',
+      // The fake yt-dlp binary this test's own PATH setup creates has no
+      // .exe suffix (it runs on this real, POSIX test machine) — matching
+      // that here, since this fake is only testing the upgrade-command
+      // wording, not exe-extension behavior itself.
+      getExecutableExtension: () => '',
     };
     const result = await checkYtDlp(windowsStylePlatform);
     assert.match(result.fix, /scoop update yt-dlp/);
@@ -148,7 +174,7 @@ test(
 test(
   'checkYtDlp flags missing:true only when yt-dlp is genuinely absent',
   withIsolatedPath(async () => {
-    const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd' };
+    const platform = { getInstallInstructions: () => 'brew install mpv yt-dlp skhd', getExecutableExtension: () => '' };
     const result = await checkYtDlp(platform);
     assert.equal(result.status, 'error');
     assert.equal(result.missing, true);

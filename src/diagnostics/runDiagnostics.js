@@ -25,9 +25,9 @@ function run(command, args) {
 
 // Scans PATH directly rather than relying on `which -a` (not present on
 // Windows, and this stays consistent across all three platforms).
-export function findAllOnPath(binaryName) {
+export function findAllOnPath(binaryName, platform) {
   const pathDirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
-  const executableName = process.platform === 'win32' ? `${binaryName}.exe` : binaryName;
+  const executableName = `${binaryName}${platform.getExecutableExtension()}`;
   const found = [];
   for (const dir of pathDirs) {
     const candidate = path.join(dir, executableName);
@@ -83,7 +83,7 @@ export async function checkMpv(platform) {
 // "not found" is possible there even on a real install.
 export async function checkHotkeyTool(platform) {
   const toolName = platform.getHotkeyToolName();
-  const installs = findAllOnPath(toolName);
+  const installs = findAllOnPath(toolName, platform);
   if (installs.length === 0) {
     return {
       name: toolName,
@@ -104,7 +104,7 @@ async function checkMpvDaemon(platform) {
 }
 
 export async function checkYtDlp(platform) {
-  const installs = findAllOnPath('yt-dlp');
+  const installs = findAllOnPath('yt-dlp', platform);
   if (installs.length === 0) {
     return {
       name: 'yt-dlp',
