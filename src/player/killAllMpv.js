@@ -1,6 +1,5 @@
 import { getPlatform } from '../platform/index.js';
-
-const MPV_PROCESS_NAME = 'mpv';
+import { MPV_BINARY } from '../constants.js';
 
 function isAlive(pid) {
   try {
@@ -61,5 +60,5 @@ export async function killAllByExactName(name, platform) {
 // looped, with no controlling terminal and no way back in) from any other
 // mpv session running for any other reason; it stops all of them.
 export function killAllMpv() {
-  return killAllByExactName(MPV_PROCESS_NAME, getPlatform());
+  return killAllByExactName(MPV_BINARY, getPlatform());
 }
