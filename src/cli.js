@@ -199,6 +199,7 @@ async function runSession({ args, platform, isControlFlag, flag }) {
       loop: intent.modifiers?.loop,
       onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
       onEmpty: () => console.log(formatCliStatus('warning', `Playlist "${intent.playlistName}" has no songs yet — add some songs to it first.`)),
+      onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
     });
   } else if (intent.kind === 'search') {
     const { pickFromSearch } = await import('../dist/ui.js');
