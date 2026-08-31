@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnAndCollect } from '../spawnAndCollect.js';
+import { YTDLP_BINARY } from '../constants.js';
 
 // Chain of Responsibility: YouTube's serving behavior for direct/streamed
 // URLs shifts over time (which player clients still get plain https URLs,
@@ -72,7 +73,7 @@ export class YoutubeResolver {
   }
 
   async search(query, top) {
-    const { code, stdout, stderr, spawnError } = await spawnAndCollect('yt-dlp', [
+    const { code, stdout, stderr, spawnError } = await spawnAndCollect(YTDLP_BINARY, [
       `ytsearch${top}:${query}`,
       '--dump-json',
       '--flat-playlist',
@@ -100,7 +101,7 @@ export class YoutubeResolver {
     const cached = fs.readdirSync(cacheDir).find((name) => name.startsWith(`${videoId}.`));
     if (cached) return path.join(cacheDir, cached);
 
-    const { code, stderr, spawnError } = await spawnAndCollect('yt-dlp', [
+    const { code, stderr, spawnError } = await spawnAndCollect(YTDLP_BINARY, [
       '-f',
       'bestaudio/best',
       '--no-warnings',
