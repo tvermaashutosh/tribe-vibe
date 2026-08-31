@@ -5,6 +5,10 @@ import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
+import { playPlaylistForeground } from '../player/directPlay.js';
+import { formatPlaylistSongList } from '../player/playlistSongList.js';
+import { formatCliStatus } from './statusLevel.js';
+import { handOffToForeground } from './handOffToForeground.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
 import { buildPlaylistListItems } from './playlistListItems.js';
@@ -106,6 +110,10 @@ export default function Playlists({ ctx, onBack }) {
 
   if (mode === 'detail') {
     const items = [
+      // A playlist is fully deterministic — playing it needs no picker, no
+      // ambiguous search, nothing — so it's the very first option here,
+      // exactly like Play view's own browse list would play it.
+      { label: '▶ Play', value: '__play__' },
       ...selectedPlaylist.songs.map((song, i) => ({
         label: `${i + 1}. ${song.title}`,
         value: `song:${i}`,
@@ -125,6 +133,25 @@ export default function Playlists({ ctx, onBack }) {
           onSelect={(item) => {
             setError(null);
             if (item.value === '__back__') return setMode('list');
+            if (item.value === '__play__') {
+              // Same check Play view's own browse list makes before handing
+              // off — an empty playlist is nothing to play, not a reason to
+              // tear down the whole session.
+              if (selectedPlaylist.songs.length === 0) {
+                setError(`Playlist "${selectedPlaylist.name}" has no songs yet — add some songs to it first.`);
+                return;
+              }
+              return handOffToForeground(ctx, () =>
+                playPlaylistForeground({
+                  resolver: ctx.resolver,
+                  platform: ctx.platform,
+                  playlistRepo: ctx.playlistRepo,
+                  playlistName: selectedPlaylist.name,
+                  onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
+                  onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
+                }),
+              );
+            }
             if (item.value === '__addSong__') {
               setPendingAction('add');
               return setMode('songSearchInput');
