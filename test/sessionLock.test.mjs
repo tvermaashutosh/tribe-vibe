@@ -14,6 +14,17 @@ function fakePlatform() {
   return { getConfigDir: () => configDir };
 }
 
+// Distinct from fakePlatform() above: mkdtempSync there already creates the
+// directory, so no existing test exercises a genuinely fresh install, where
+// nothing has created the config dir (or its parent) at all yet — exactly
+// the state cli.js's run() sees on a brand-new machine, since acquireSessionLock
+// is called before any repository's own mkdirSync ever runs.
+function fakeFreshInstallPlatform() {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-test-'));
+  const configDir = path.join(base, 'not-yet-created', 'tribe-vibe');
+  return { getConfigDir: () => configDir };
+}
+
 test('acquireSessionLock wins the lock when nothing else holds it', () => {
   const platform = fakePlatform();
   assert.equal(acquireSessionLock(platform), true);
@@ -53,5 +64,31 @@ test('acquireSessionLock does not treat a fresh lock as stale', () => {
   const platform = fakePlatform();
   assert.equal(acquireSessionLock(platform), true);
   // Still fresh — a second process must not be able to steal it.
+  assert.equal(acquireSessionLock(platform), false);
+});
+
+// Bug: mkdirSync(dir) threw ENOENT when the parent config dir didn't exist
+// yet (a genuinely fresh install), and the old code treated ANY non-EEXIST
+// error as "lock won" — without ever actually creating the lock. This is
+// the smoking gun: it must return true AND the lock must genuinely exist on
+// disk afterward, not just claim to have won it.
+test('acquireSessionLock actually creates the lock on a fresh install, not just claims to', () => {
+  const platform = fakeFreshInstallPlatform();
+  assert.equal(fs.existsSync(platform.getConfigDir()), false);
+
+  assert.equal(acquireSessionLock(platform), true);
+
+  assert.equal(fs.existsSync(path.join(platform.getConfigDir(), '.session-lock')), true);
+});
+
+// The real-world consequence of the bug: two tv processes launched
+// concurrently on a fresh install both call acquireSessionLock before
+// either has had a chance to create the config dir. Before the fix, BOTH
+// calls independently hit ENOENT and BOTH returned true — meaning both
+// believed they'd won the lock and both would wipe the shared cache
+// simultaneously, the exact race this file exists to prevent.
+test('two concurrent first-run processes do not both win the lock', () => {
+  const platform = fakeFreshInstallPlatform();
+  assert.equal(acquireSessionLock(platform), true);
   assert.equal(acquireSessionLock(platform), false);
 });

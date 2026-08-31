@@ -23,6 +23,22 @@ function lockPath(platform) {
 export function acquireSessionLock(platform) {
   const dir = lockPath(platform);
   try {
+    // A genuinely fresh install has no config dir yet — every repository's
+    // own mkdirSync(configDir, {recursive:true}) only runs after this is
+    // called (inside runSession(), not before it), so without this,
+    // mkdirSync(dir) below throws ENOENT, which the catch below used to
+    // treat as "lock won" without creating anything at all — letting two
+    // concurrent first-run processes both believe they'd won it. Best-effort
+    // and kept separate from the real lock creation below: recursive
+    // mkdirSync silently no-ops once the directory already exists, so this
+    // step never risks the race-safety the plain, non-recursive mkdirSync(dir)
+    // below still relies on.
+    fs.mkdirSync(path.dirname(dir), { recursive: true });
+  } catch {
+    // Fall through — mkdirSync(dir) below fails too, and the existing
+    // fallback handles that exactly the way it always has.
+  }
+  try {
     fs.mkdirSync(dir);
     return true;
   } catch (err) {
