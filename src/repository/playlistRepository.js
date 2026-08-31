@@ -83,6 +83,13 @@ export class PlaylistRepository {
 
   reorder(name, fromIndex, toIndex) {
     const playlist = this._find(name);
+    // An out-of-range fromIndex makes splice(fromIndex, 1) return
+    // [undefined] instead of a real song — that undefined then gets
+    // inserted right back into songs and persisted, corrupting the
+    // playlist with a malformed entry. Bounds-checked the same way toIndex
+    // already was, silently no-op-ing on a bad index rather than throwing —
+    // matches toIndex's own established behavior here.
+    if (fromIndex < 0 || fromIndex >= playlist.songs.length) return;
     if (toIndex < 0 || toIndex >= playlist.songs.length) return;
     const [moved] = playlist.songs.splice(fromIndex, 1);
     playlist.songs.splice(toIndex, 0, moved);
