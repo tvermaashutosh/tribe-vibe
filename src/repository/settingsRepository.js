@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { DEFAULT_SETTINGS } from '../constants.js';
+import { writeJsonAtomic } from './jsonStore.js';
 
 // Settings live inside the Ink app only (Settings screen) — there is no typed
 // CLI syntax for these, by design (see the typed-CLI-vs-Ink-only scope split).
@@ -33,9 +34,6 @@ export class SettingsRepository {
   // patch), so a plain Object.assign is enough to keep the two in sync.
   save(next) {
     Object.assign(this.settings, next);
-    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-    const tmpPath = `${this.filePath}.tmp-${process.pid}`;
-    fs.writeFileSync(tmpPath, JSON.stringify(this.settings, null, 2));
-    fs.renameSync(tmpPath, this.filePath);
+    writeJsonAtomic(this.filePath, this.settings);
   }
 }
