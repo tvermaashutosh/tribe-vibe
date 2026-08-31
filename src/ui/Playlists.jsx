@@ -7,6 +7,7 @@ import SkipList from './SkipList.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
+import { buildPlaylistListItems } from './playlistListItems.js';
 import { theme } from './theme.js';
 
 // One screen for everything playlist-related: the list of existing playlists
@@ -57,10 +58,7 @@ export default function Playlists({ ctx, onBack }) {
 
   if (mode === 'list') {
     const items = [
-      ...playlists.map((playlist) => ({
-        label: `${playlist.name}  →  ${playlist.songs.length} songs`,
-        value: playlist.name,
-      })),
+      ...buildPlaylistListItems(playlists),
       ...(playlists.length > 0 ? [DIVIDER_ITEM] : []),
       { label: '+ New playlist', value: '__add__' },
       { label: '‹ Back', value: '__back__' },
