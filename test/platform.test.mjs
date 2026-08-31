@@ -13,6 +13,9 @@ test('platform factory returns an adapter matching the current OS', () => {
   assert.equal(typeof platform.getYtDlpUpgradeInstructions(), 'string');
   assert.equal(typeof platform.getYtDlpConfigHint(), 'string');
   assert.equal(typeof platform.generateHotkeyConfig([{ key: 'cmd+alt+p', flag: 'pause' }]), 'string');
+  assert.equal(typeof platform.getExecutableExtension(), 'string');
+  assert.equal(typeof platform.canRestoreTerminal(), 'boolean');
+  assert.ok(Array.isArray(platform.findProcessPidsByExactName('definitely-not-a-real-process-xyz')));
 });
 
 // Confirmed live against real Homebrew: skhd isn't in homebrew-core at all

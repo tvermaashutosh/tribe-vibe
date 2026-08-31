@@ -1,5 +1,6 @@
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 export class WindowsPlatform {
   getMpvSocketPath() {
@@ -44,5 +45,37 @@ export class WindowsPlatform {
   // %APPDATA%, not ~/.config, which yt-dlp doesn't check here at all).
   getYtDlpConfigHint() {
     return '%APPDATA%\\yt-dlp\\config';
+  }
+
+  // A binary on PATH here needs .exe appended to actually find it
+  // (findAllOnPath in diagnostics/runDiagnostics.js) — unlike macOS/Linux,
+  // where a binary has no filename suffix at all.
+  getExecutableExtension() {
+    return '.exe';
+  }
+
+  // No stty here — a raw-mode child (mpv) leaving the terminal stuck is not
+  // something playForeground.js's stty-based restoration can fix on this
+  // platform, so it skips attempting it entirely.
+  canRestoreTerminal() {
+    return false;
+  }
+
+  // Unverified live (no Windows machine available in this project) — based
+  // on tasklist's documented CSV output: one process per line, quoted image
+  // name first, quoted PID second. IMAGENAME eq is an exact match on
+  // Windows too, same contract as pgrep -x on macOS/Linux.
+  findProcessPidsByExactName(name) {
+    try {
+      const output = execFileSync('tasklist', ['/FI', `IMAGENAME eq ${name}.exe`, '/NH', '/FO', 'CSV'], { encoding: 'utf8' });
+      return output
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => Number(line.split(',')[1]?.replace(/"/g, '')))
+        .filter((pid) => Number.isInteger(pid));
+    } catch {
+      return [];
+    }
   }
 }
