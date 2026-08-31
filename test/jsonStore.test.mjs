@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { readJsonArray, writeJsonArrayAtomic } from '../src/repository/jsonStore.js';
+import { readJsonArray, writeJsonAtomic } from '../src/repository/jsonStore.js';
 
 function tempFilePath(name = 'store.json') {
   return path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-jsonstore-test-')), name);
@@ -19,10 +19,10 @@ test('readJsonArray returns an empty array for a blank/whitespace-only file', ()
   assert.deepEqual(readJsonArray(filePath), []);
 });
 
-test('readJsonArray round-trips real data written by writeJsonArrayAtomic', () => {
+test('readJsonArray round-trips real data written by writeJsonAtomic', () => {
   const filePath = tempFilePath();
   const data = [{ token: 'tsw', type: 'artist', value: 'Taylor Swift' }];
-  writeJsonArrayAtomic(filePath, data);
+  writeJsonAtomic(filePath, data);
   assert.deepEqual(readJsonArray(filePath), data);
 });
 
@@ -43,20 +43,29 @@ test('readJsonArray falls back to an empty array for syntactically-valid JSON th
   assert.deepEqual(readJsonArray(filePath), []);
 });
 
-test('writeJsonArrayAtomic creates the parent directory if it does not exist yet', () => {
+test('writeJsonAtomic creates the parent directory if it does not exist yet', () => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-jsonstore-test-'));
   const filePath = path.join(base, 'nested', 'dir', 'store.json');
-  writeJsonArrayAtomic(filePath, [{ a: 1 }]);
+  writeJsonAtomic(filePath, [{ a: 1 }]);
   assert.deepEqual(readJsonArray(filePath), [{ a: 1 }]);
 });
 
-test('writeJsonArrayAtomic never leaves a corrupted file behind mid-write — the old file stays valid until the rename completes', () => {
+test('writeJsonAtomic never leaves a corrupted file behind mid-write — the old file stays valid until the rename completes', () => {
   const filePath = tempFilePath();
-  writeJsonArrayAtomic(filePath, [{ a: 1 }]);
-  writeJsonArrayAtomic(filePath, [{ a: 2 }]);
+  writeJsonAtomic(filePath, [{ a: 1 }]);
+  writeJsonAtomic(filePath, [{ a: 2 }]);
   // Only the real file should exist afterward — no leftover .tmp-<pid> file.
   const dir = path.dirname(filePath);
   const leftover = fs.readdirSync(dir).filter((name) => name.includes('.tmp-'));
   assert.deepEqual(leftover, []);
   assert.deepEqual(readJsonArray(filePath), [{ a: 2 }]);
+});
+
+// The actual point of the shared name: this now writes a plain object just
+// as well as an array — SettingsRepository.save() relies on exactly this,
+// having dropped its own duplicated copy of this same write logic.
+test('writeJsonAtomic works with a plain object, not just an array', () => {
+  const filePath = tempFilePath('settings.json');
+  writeJsonAtomic(filePath, { top: 20 });
+  assert.deepEqual(JSON.parse(fs.readFileSync(filePath, 'utf8')), { top: 20 });
 });
