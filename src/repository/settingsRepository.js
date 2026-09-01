@@ -26,7 +26,7 @@ export class SettingsRepository {
 
   // Mutates this.settings in place rather than reassigning it — cli.js
   // hands the same object out once, by reference, as ctx.settings, and
-  // every screen (Play.jsx, Aliases.jsx, Playlists.jsx, ...) holds onto
+  // every screen (Play.jsx, AliasScreen.jsx, Playlists.jsx, ...) holds onto
   // that same reference. Reassigning here would leave every one of them
   // reading a stale object unless the caller separately re-patched it by
   // hand after every save() — which used to be true, and easy to forget.
