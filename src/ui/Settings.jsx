@@ -40,10 +40,10 @@ export default function Settings({ ctx, onBack }) {
   });
 
   const items = [
-    { label: 'ℹ About', value: '__about__' },
+    { label: '⇩ Export about', value: '__about__' },
+    { label: '⇩ Export data', value: '__export__' },
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
-    { label: '⇩ Export data', value: '__export__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
     { label: '‹ Back', value: '__back__' },
   ];
