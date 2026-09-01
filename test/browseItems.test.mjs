@@ -10,9 +10,9 @@ function fakePlaylistRepo(playlists) {
   return { all: () => playlists };
 }
 
-test('buildBrowseItems combines artist aliases, song aliases, and playlists, grouped song -> playlist -> artist regardless of insertion order', () => {
+test('buildBrowseItems combines song aliases and playlists, grouped song -> playlist regardless of insertion order', () => {
   const aliasRepo = fakeAliasRepo([
-    // Artist listed first in storage — the output must still put songs first.
+    // Artist listed first in storage — must never appear in the output at all.
     { token: 'tsw', type: 'artist', value: 'Taylor Swift' },
     { token: 'tt', type: 'song', videoId: 'abc123', title: 'Taylor Swift - 22' },
   ]);
@@ -20,27 +20,23 @@ test('buildBrowseItems combines artist aliases, song aliases, and playlists, gro
 
   const items = buildBrowseItems(aliasRepo, playlistRepo);
 
-  assert.equal(items.length, 3);
+  assert.equal(items.length, 2);
   assert.equal(items[0].itemType, 'song');
   assert.match(items[0].label, /tt.*Taylor Swift - 22.*\(song\)/);
   assert.equal(items[1].itemType, 'playlist');
   assert.match(items[1].label, /focus.*1 song.*\(playlist\)/);
-  assert.equal(items[2].itemType, 'artist');
-  assert.match(items[2].label, /tsw.*Taylor Swift.*\(artist\)/);
 });
 
-test('buildBrowseItems keeps all songs together before all artists, even when interleaved in storage', () => {
+test('buildBrowseItems never includes an artist alias — picking one is an ambiguous search, not a one-click play', () => {
   const aliasRepo = fakeAliasRepo([
     { token: 'a1', type: 'artist', value: 'Artist One' },
     { token: 's1', type: 'song', videoId: 'x', title: 'Song One' },
-    { token: 'a2', type: 'artist', value: 'Artist Two' },
-    { token: 's2', type: 'song', videoId: 'y', title: 'Song Two' },
   ]);
   const items = buildBrowseItems(aliasRepo, fakePlaylistRepo([]));
 
   assert.deepEqual(
     items.map((item) => item.itemType),
-    ['song', 'song', 'artist', 'artist'],
+    ['song'],
   );
 });
 
@@ -61,28 +57,22 @@ test('buildBrowseItems returns an empty list when there is nothing to browse', (
   assert.deepEqual(buildBrowseItems(fakeAliasRepo([]), fakePlaylistRepo([])), []);
 });
 
-test('buildBrowseItems keeps the title/value in full, padded to line up — nothing is ever truncated', () => {
-  const aliasRepo = fakeAliasRepo([
-    { token: 'tt', type: 'song', videoId: 'a', title: 'A very long song title that would definitely wrap' },
-    { token: 'ts', type: 'artist', value: 'A very long canonical artist name that would definitely wrap' },
-  ]);
-  const items = buildBrowseItems(aliasRepo, fakePlaylistRepo([]));
+test('buildBrowseItems keeps the title in full, padded to line up — nothing is ever truncated', () => {
+  const token = 'tt';
+  const title = 'A very long song title that would definitely wrap';
+  const playlistName = 'a-much-longer-playlist-name-here';
+  const aliasRepo = fakeAliasRepo([{ token, type: 'song', videoId: 'a', title }]);
+  const playlistRepo = fakePlaylistRepo([{ name: playlistName, songs: [] }]);
+  const items = buildBrowseItems(aliasRepo, playlistRepo);
 
-  // The artist's value is longer, so the song's value column is padded out
-  // to match it — its full, untruncated text is still there, just followed
-  // by trailing spaces so "(song)" lines up under where "(artist)" starts.
-  assert.equal(
-    items[0].label,
-    `tt  →  ${'A very long song title that would definitely wrap'.padEnd('A very long canonical artist name that would definitely wrap'.length)}  (song)`,
-  );
-  assert.equal(items[1].label, 'ts  →  A very long canonical artist name that would definitely wrap  (artist)');
+  const tokenWidth = Math.max(token.length, playlistName.length);
+  const valueWidth = Math.max(title.length, '0 songs'.length);
+  assert.equal(items[0].label, `${token.padEnd(tokenWidth)}  →  ${title.padEnd(valueWidth)}  (song)`);
+  assert.equal(items[1].label, `${playlistName.padEnd(tokenWidth)}  →  ${'0 songs'.padEnd(valueWidth)}  (playlist)`);
 });
 
-test('buildBrowseItems columnar-aligns token, value, and "(type)" across every row — song, playlist, and artist rows alike', () => {
-  const aliasRepo = fakeAliasRepo([
-    { token: 'tt', type: 'song', videoId: 'a', title: 'A Song' },
-    { token: 'a-very-long-token', type: 'artist', value: 'X' },
-  ]);
+test('buildBrowseItems columnar-aligns token, value, and "(type)" across song and playlist rows alike', () => {
+  const aliasRepo = fakeAliasRepo([{ token: 'a-very-long-token', type: 'song', videoId: 'a', title: 'A Song' }]);
   const playlistRepo = fakePlaylistRepo([{ name: 'p', songs: [{ videoId: 'z' }] }]);
 
   const items = buildBrowseItems(aliasRepo, playlistRepo);
@@ -90,7 +80,7 @@ test('buildBrowseItems columnar-aligns token, value, and "(type)" across every r
   const parenStarts = items.map((item) => item.label.indexOf('('));
 
   // Every row's "→" starts at the same column — the token column is as wide
-  // as 'a-very-long-token', the longest token across all three kinds.
+  // as 'a-very-long-token', the longest token across both kinds.
   assert.equal(new Set(arrowStarts).size, 1);
   // Every row's "(type)" starts at the same column too.
   assert.equal(new Set(parenStarts).size, 1);
@@ -102,8 +92,6 @@ test('buildBrowseItems sorts each chunk most-recently-touched first, independent
   const aliasRepo = fakeAliasRepo([
     { token: 's-old', type: 'song', videoId: 'x', title: 'Old Song', updatedAt: 100 },
     { token: 's-new', type: 'song', videoId: 'y', title: 'New Song', updatedAt: 300 },
-    { token: 'a-old', type: 'artist', value: 'Old Artist', updatedAt: 100 },
-    { token: 'a-new', type: 'artist', value: 'New Artist', updatedAt: 300 },
   ]);
   const playlistRepo = fakePlaylistRepo([
     { name: 'old-playlist', songs: [], updatedAt: 100 },
@@ -114,13 +102,8 @@ test('buildBrowseItems sorts each chunk most-recently-touched first, independent
 
   assert.deepEqual(
     items.map((item) => item.token),
-    ['s-new', 's-old', 'new-playlist', 'old-playlist', 'a-new', 'a-old'],
+    ['s-new', 's-old', 'new-playlist', 'old-playlist'],
   );
-});
-
-test('intentForBrowseItem: an artist item resolves to the same ambiguous search typing it alone would', () => {
-  const intent = intentForBrowseItem({ itemType: 'artist', artistName: 'Taylor Swift' });
-  assert.deepEqual(intent, { kind: 'search', deterministic: false, query: 'Taylor Swift', modifiers: {} });
 });
 
 test('intentForBrowseItem: a song item resolves deterministically, no search involved', () => {
