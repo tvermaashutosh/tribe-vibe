@@ -50,6 +50,7 @@ test('exportToExcel writes artist/song/playlist sheets with full URLs, not hashe
   assert.equal(songSheet.getRow(1).getCell(1).fill.fgColor.argb, 'FFFFFF00');
 
   const playlistSheet = workbook.getWorksheet('Playlists');
+  assert.equal(playlistSheet.getRow(1).getCell(1).value, 'Token');
   assert.equal(playlistSheet.getRow(2).getCell(1).value, 'focus');
   assert.equal(playlistSheet.getRow(2).getCell(4).value, 'https://www.youtube.com/watch?v=xyz789');
 

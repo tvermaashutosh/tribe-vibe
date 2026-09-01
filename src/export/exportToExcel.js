@@ -37,7 +37,7 @@ export async function exportToExcel({ aliasRepo, playlistRepo, resolver, downloa
 
   const playlistSheet = workbook.addWorksheet('Playlists');
   playlistSheet.columns = [
-    { header: 'Playlist', key: 'playlist' },
+    { header: 'Token', key: 'playlist' },
     { header: 'Position', key: 'position' },
     { header: 'Title', key: 'title' },
     { header: 'YouTube URL', key: 'url' },
