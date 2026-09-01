@@ -51,12 +51,12 @@ function guardVulnerableWindow(platform) {
 // the last --force-media-title on the line wins for the whole playlist).
 export function playForeground({ files, loop, platform }) {
   // The ${media-title} substitution is colored cyan (matching
-  // theme.secondary), leaving the "Now playing: " prefix plain — mpv just
+  // theme.secondary), leaving the "Playing: " prefix plain — mpv just
   // echoes this template verbatim to the terminal, so embedding a raw ANSI
   // code in a param we already fully own doesn't touch mpv's own behavior
   // at all (verified live: mpv passes it straight through, no shell/quoting
   // involved since this is a literal argv element, not a shell string).
-  const args = ['--no-video', '--term-osd-bar', '--term-playing-msg=Now playing: \x1b[36m${media-title}\x1b[39m'];
+  const args = ['--no-video', '--term-osd-bar', '--term-playing-msg=Playing: \x1b[36m${media-title}\x1b[39m'];
   if (loop) args.push(`--loop=${loop === true ? 'inf' : loop}`);
 
   for (const file of files) {
