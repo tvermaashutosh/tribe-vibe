@@ -8,7 +8,7 @@ export const theme = {
   selected: 'blue',
   // The second-most-prominent text in a screen: each screen's own subheading
   // (right below the "tribe-vibe" accent heading) and the song title in the
-  // pre-mpv "Now playing" line. A light-blue/cyan complements accent's
+  // pre-mpv "Playing:" line. A light-blue/cyan complements accent's
   // magenta without being confusable with selected's blue.
   secondary: 'cyan',
   dim: 'gray',
