@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
-import Aliases from './Aliases.jsx';
+import AliasScreen from './AliasScreen.jsx';
 import Playlists from './Playlists.jsx';
 import Settings from './Settings.jsx';
 import { theme } from './theme.js';
@@ -24,8 +24,9 @@ export default function App({ ctx }) {
       </Text>
       {screen === 'main' && <MainMenu ctx={ctx} onNavigate={setScreen} />}
       {screen === 'play' && <Play ctx={ctx} onBack={() => setScreen('main')} />}
-      {screen === 'aliases' && <Aliases ctx={ctx} onBack={() => setScreen('main')} />}
+      {screen === 'songs' && <AliasScreen ctx={ctx} type="song" onBack={() => setScreen('main')} />}
       {screen === 'playlists' && <Playlists ctx={ctx} onBack={() => setScreen('main')} />}
+      {screen === 'artists' && <AliasScreen ctx={ctx} type="artist" onBack={() => setScreen('main')} />}
       {screen === 'settings' && <Settings ctx={ctx} onBack={() => setScreen('main')} />}
     </Box>
   );
