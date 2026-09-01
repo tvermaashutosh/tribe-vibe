@@ -9,6 +9,13 @@ import { resetAllData } from '../repository/resetAllData.js';
 import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import { theme } from './theme.js';
 
+// `editing` holds the raw settings key ('top') — this maps it to the
+// human-facing word used in prompts/messages, so a reader never sees the
+// internal key name itself. Only one editable setting exists today, but
+// this stays a map (not an inline ternary) so a second one doesn't need its
+// own branch bolted on later.
+const SETTING_LABEL = { top: 'result' };
+
 export default function Settings({ ctx, onBack }) {
   const [mode, setMode] = useState('list');
   const [editing, setEditing] = useState(null);
@@ -44,7 +51,7 @@ export default function Settings({ ctx, onBack }) {
   if (editing) {
     return (
       <Box flexDirection="column">
-        <Text>New value for {editing}:</Text>
+        <Text>New value for {SETTING_LABEL[editing] ?? editing}:</Text>
         <TextInput
           value={value}
           onChange={setValue}
@@ -62,7 +69,10 @@ export default function Settings({ ctx, onBack }) {
               // re-patch needed here anymore.
               ctx.saveSettings({ ...ctx.settings, [editing]: parsed });
             } else {
-              showStatus(`"${value}" isn't a positive whole number — kept ${editing}: ${ctx.settings[editing]}`, 'warning');
+              showStatus(
+                `"${value}" isn't a positive whole number — kept ${SETTING_LABEL[editing] ?? editing}: ${ctx.settings[editing]}`,
+                'warning',
+              );
             }
             setEditing(null);
             setValue('');
