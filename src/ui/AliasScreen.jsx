@@ -11,12 +11,18 @@ import { DIVIDER_ITEM } from './divider.js';
 import { buildAliasListItems } from './aliasListItems.js';
 import { theme } from './theme.js';
 
-// One screen for everything alias-related: the flat list of every existing
-// artist/song alias (rename/replace/delete), plus creating new ones. Adding
-// another alias for an artist that already exists isn't a separate feature —
-// typing the same canonical name again just adds one more token pointing at
-// it, since AliasRepository doesn't distinguish the two.
-export default function Aliases({ ctx, onBack }) {
+const SCREEN_LABEL = { song: 'Songs', artist: 'Artists' };
+
+// One screen, reused for both the Songs and Artists menu entries — `type`
+// ('song' or 'artist') is the only thing that changes: which slice of
+// AliasRepository's flat alias list this screen manages, and the handful of
+// genuinely type-specific flows (a song can be Played or Replaced via a
+// Picker preview; an artist is added as a name plus a comma-separated token
+// list, never a picker, and has no Play option — picking one is an
+// ambiguous search, not a one-click play). Splitting the underlying storage
+// was never on the table — same AliasRepository, same aliases.json, just
+// two focused views onto it instead of one screen mixing both together.
+export default function AliasScreen({ ctx, type, onBack }) {
   const [mode, setMode] = useState('list');
   const [selectedToken, setSelectedToken] = useState(null);
   const [nameInput, setNameInput] = useState('');
@@ -31,7 +37,7 @@ export default function Aliases({ ctx, onBack }) {
   // just sets it again afterward in the same call, so nothing flickers.
   const [error, setError] = useState(null);
 
-  const aliases = ctx.aliasRepo.all();
+  const aliases = ctx.aliasRepo.all().filter((alias) => alias.type === type);
   const selectedEntry = aliases.find((alias) => alias.token === selectedToken);
 
   useInput(
@@ -49,21 +55,19 @@ export default function Aliases({ ctx, onBack }) {
     const items = [
       ...buildAliasListItems(aliases),
       ...(aliases.length > 0 ? [DIVIDER_ITEM] : []),
-      { label: '+ New artist alias', value: '__addArtist__' },
-      { label: '+ New song alias', value: '__addSong__' },
+      { label: type === 'song' ? '+ New song alias' : '+ New artist alias', value: '__add__' },
       { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>Aliases</Text>
+        <Text bold color={theme.secondary}>{SCREEN_LABEL[type]}</Text>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
             if (item.value === '__back__') return onBack();
-            if (item.value === '__addArtist__') return setMode('artistName');
-            if (item.value === '__addSong__') return setMode('songSearchInput');
+            if (item.value === '__add__') return setMode(type === 'song' ? 'songSearchInput' : 'artistName');
             setSelectedToken(item.value);
             return setMode('detail');
           }}
@@ -79,16 +83,16 @@ export default function Aliases({ ctx, onBack }) {
     // exactly like Play view's own browse list would play it. An artist
     // alias has no such option: it's an ambiguous search by definition.
     const items = [
-      ...(selectedEntry.type === 'song' ? [{ label: '▶ Play', value: 'play' }] : []),
+      ...(type === 'song' ? [{ label: '▶ Play', value: 'play' }] : []),
       { label: '⟳ Rename alias', value: 'rename' },
-      ...(selectedEntry.type === 'song' ? [{ label: '⟳ Replace (listen & re-pick)', value: 'replace' }] : []),
+      ...(type === 'song' ? [{ label: '⟳ Replace (listen & re-pick)', value: 'replace' }] : []),
       { label: '- Delete alias', value: 'delete' },
       { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
         <Text bold color={theme.secondary}>{selectedEntry.token}</Text>
-        <Text color={theme.dim}>{selectedEntry.type === 'artist' ? selectedEntry.value : selectedEntry.title}</Text>
+        <Text color={theme.dim}>{type === 'artist' ? selectedEntry.value : selectedEntry.title}</Text>
         <SelectInput
           items={items}
           onHighlight={() => setError(null)}
