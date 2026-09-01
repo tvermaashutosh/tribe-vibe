@@ -5,8 +5,9 @@ import { exitCleanly } from './exitCleanly.js';
 
 const ITEMS = [
   { label: 'Play', value: 'play' },
-  { label: 'Aliases', value: 'aliases' },
+  { label: 'Songs', value: 'songs' },
   { label: 'Playlists', value: 'playlists' },
+  { label: 'Artists', value: 'artists' },
   { label: 'Settings', value: 'settings' },
   { label: 'Exit', value: 'exit' },
 ];
