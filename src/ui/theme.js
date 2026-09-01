@@ -1,7 +1,7 @@
 export const theme = {
   accent: 'magenta',
   // ink-select-input's own default highlight color — every list in the app
-  // (SkipList, Settings, Aliases, Playlists) already matches this via that
+  // (SkipList, Settings, AliasScreen, Playlists) already matches this via that
   // library. Named here so the two screens with a hand-rolled list
   // (Play's browse list, Picker's results) can match it too, instead of
   // drifting to theme.accent's magenta, which is reserved for headings/branding.
