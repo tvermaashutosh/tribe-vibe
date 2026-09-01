@@ -185,6 +185,9 @@ function buildPdf() {
 export async function exportAboutPdf({ downloadsDir }) {
   fs.mkdirSync(downloadsDir, { recursive: true });
   const outputPath = path.join(downloadsDir, EXPORT_FILE_NAME);
+  // A fresh file each time, not an in-place overwrite — force:true means a
+  // missing prior export (the common case) is a silent no-op, not an error.
+  fs.rmSync(outputPath, { force: true });
   fs.writeFileSync(outputPath, buildPdf());
   return outputPath;
 }
