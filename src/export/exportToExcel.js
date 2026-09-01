@@ -13,25 +13,17 @@ function styleHeaderRow(sheet) {
 
 // Full YouTube URLs, not raw video hashes — the whole point of an export is
 // for a human to open it and recognize what's in it. Same fixed file name
-// every time, so re-exporting just overwrites the prior copy. Column widths
-// are left at Excel's own default — no attempt to compute a custom width,
-// since character count doesn't match how Excel actually renders proportional
-// fonts (narrower letters/punctuation vs. the digit-width column unit).
+// every time, so re-exporting deletes and recreates it rather than
+// overwriting in place. Column widths are left at Excel's own default — no
+// attempt to compute a custom width, since character count doesn't match
+// how Excel actually renders proportional fonts (narrower letters/
+// punctuation vs. the digit-width column unit). Sheet order is Songs,
+// Playlists, Artists — songs and playlists are what you'd actually look up
+// most often (both play in one click), artists last.
 export async function exportToExcel({ aliasRepo, playlistRepo, resolver, downloadsDir }) {
   const workbook = new ExcelJS.Workbook();
 
-  const artistSheet = workbook.addWorksheet('Artist Aliases');
-  artistSheet.columns = [
-    { header: 'Token', key: 'token' },
-    { header: 'Artist', key: 'artist' },
-  ];
-  aliasRepo
-    .all()
-    .filter((alias) => alias.type === 'artist')
-    .forEach((alias) => artistSheet.addRow({ token: alias.token, artist: alias.value }));
-  styleHeaderRow(artistSheet);
-
-  const songSheet = workbook.addWorksheet('Song Aliases');
+  const songSheet = workbook.addWorksheet('Songs');
   songSheet.columns = [
     { header: 'Token', key: 'token' },
     { header: 'Title', key: 'title' },
@@ -66,8 +58,22 @@ export async function exportToExcel({ aliasRepo, playlistRepo, resolver, downloa
   });
   styleHeaderRow(playlistSheet);
 
+  const artistSheet = workbook.addWorksheet('Artists');
+  artistSheet.columns = [
+    { header: 'Token', key: 'token' },
+    { header: 'Artist', key: 'artist' },
+  ];
+  aliasRepo
+    .all()
+    .filter((alias) => alias.type === 'artist')
+    .forEach((alias) => artistSheet.addRow({ token: alias.token, artist: alias.value }));
+  styleHeaderRow(artistSheet);
+
   fs.mkdirSync(downloadsDir, { recursive: true });
   const outputPath = path.join(downloadsDir, EXPORT_FILE_NAME);
+  // A fresh file each time, not an in-place overwrite — force:true means a
+  // missing prior export (the common case) is a silent no-op, not an error.
+  fs.rmSync(outputPath, { force: true });
   await workbook.xlsx.writeFile(outputPath);
   return outputPath;
 }
