@@ -36,7 +36,7 @@ export default function Playlists({ ctx, onBack }) {
   const [songSearchStatus, setSongSearchStatus] = useState(null);
   const [pickerQuery, setPickerQuery] = useState('');
 
-  // Most-recently-touched first — same model as Aliases/Play: creating,
+  // Most-recently-touched first — same model as AliasScreen/Play: creating,
   // renaming, or editing a playlist's songs all bump it back to the top.
   const playlists = sortByRecency(ctx.playlistRepo.all());
   const selectedPlaylist = playlists.find((entry) => entry.name === selected);
