@@ -3,11 +3,6 @@ import { getPlatform } from '../src/platform/index.js';
 import { runDiagnostics } from '../src/diagnostics/runDiagnostics.js';
 import { formatCliStatus } from '../src/ui/statusLevel.js';
 
-// npm itself is a .cmd shim on Windows — spawn('npm', ...) without shell:true
-// throws ENOENT there, a well-known Node cross-platform gotcha. Using the
-// real executable name per OS avoids needing a shell at all.
-const NPM_COMMAND = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-
 function runStep(command, args) {
   return new Promise((resolve, reject) => {
     const proc = spawn(command, args, { stdio: 'inherit' });
@@ -28,19 +23,23 @@ function runInstallCommand(fullCommand) {
 async function main() {
   const installDeps = process.argv.includes('--install-deps');
   const platform = getPlatform();
+  // npm itself is a .cmd shim on Windows — spawn('npm', ...) without
+  // shell:true throws ENOENT there, a well-known Node cross-platform gotcha.
+  // Using the real executable name per OS avoids needing a shell at all.
+  const npmCommand = platform.getNpmCommand();
 
   console.log(formatCliStatus('success', 'Installing npm packages...'));
-  await runStep(NPM_COMMAND, ['install']);
+  await runStep(npmCommand, ['install']);
 
   console.log(formatCliStatus('success', 'Building...'));
-  await runStep(NPM_COMMAND, ['run', 'build']);
+  await runStep(npmCommand, ['run', 'build']);
 
   // A failed link (commonly a permissions issue on the global npm prefix)
   // shouldn't block the dependency check below — it's independently useful
   // even if the user still needs to sort out linking themselves.
   try {
     console.log(formatCliStatus('success', 'Linking tv onto PATH...'));
-    await runStep(NPM_COMMAND, ['link']);
+    await runStep(npmCommand, ['link']);
   } catch (err) {
     console.log(formatCliStatus('warning', `npm link failed (${err.message}) — you may need elevated permissions, or run it yourself.`));
   }
