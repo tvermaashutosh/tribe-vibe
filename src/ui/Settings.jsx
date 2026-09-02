@@ -14,7 +14,7 @@ import { theme } from './theme.js';
 // internal key name itself. Only one editable setting exists today, but
 // this stays a map (not an inline ternary) so a second one doesn't need its
 // own branch bolted on later.
-const SETTING_LABEL = { top: 'result' };
+const SETTING_LABEL = { top: 'result count' };
 
 export default function Settings({ ctx, onBack }) {
   const [mode, setMode] = useState('list');
