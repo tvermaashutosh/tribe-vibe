@@ -7,6 +7,14 @@ export class MacPlatform {
     return path.join(os.tmpdir(), 'tribe-vibe-mpv.sock');
   }
 
+  // debugTrace.js's own log — same os.tmpdir()-backed shape as
+  // getMpvSocketPath() above, for the same reason: a fixed-name file under
+  // the OS's own scratch directory, not anything tribe-vibe's own config/
+  // cache dirs should own.
+  getDebugLogPath() {
+    return path.join(os.tmpdir(), 'tribe-vibe-debug.log');
+  }
+
   getConfigDir() {
     return path.join(os.homedir(), '.config', 'tribe-vibe');
   }
@@ -53,6 +61,14 @@ export class MacPlatform {
   // diagnostics/runDiagnostics.js).
   getExecutableExtension() {
     return '';
+  }
+
+  // npm itself is a plain executable here — unlike Windows, where it's a
+  // .cmd shim (see WindowsPlatform's own note). Not the same question
+  // getExecutableExtension() answers: npm's Windows launcher is npm.cmd,
+  // never npm.exe, so this needed its own method rather than reusing that one.
+  getNpmCommand() {
+    return 'npm';
   }
 
   // stty exists here; a raw-mode child (mpv) leaving the terminal stuck

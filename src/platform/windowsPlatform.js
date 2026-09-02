@@ -9,6 +9,13 @@ export class WindowsPlatform {
     return '\\\\.\\pipe\\tribevibe';
   }
 
+  // debugTrace.js's own log — plain os.tmpdir()-backed file, same as
+  // macOS/Linux, since (unlike the mpv socket above) there's no
+  // Windows-specific transport question here, just a scratch-dir file path.
+  getDebugLogPath() {
+    return path.join(os.tmpdir(), 'tribe-vibe-debug.log');
+  }
+
   getConfigDir() {
     return path.join(process.env.APPDATA || os.homedir(), 'tribe-vibe');
   }
@@ -52,6 +59,15 @@ export class WindowsPlatform {
   // where a binary has no filename suffix at all.
   getExecutableExtension() {
     return '.exe';
+  }
+
+  // npm itself is a .cmd shim here, not a real .exe — spawning the bare
+  // 'npm' name without shell:true throws ENOENT on Windows, a well-known
+  // Node cross-platform gotcha (see scripts/setup.mjs's own use of this).
+  // Not the same question getExecutableExtension() answers: that's .exe,
+  // this is .cmd, so it needed its own method rather than reusing that one.
+  getNpmCommand() {
+    return 'npm.cmd';
   }
 
   // No stty here — a raw-mode child (mpv) leaving the terminal stuck is not
