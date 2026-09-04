@@ -4,6 +4,7 @@ import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
+import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playSongForeground } from '../player/directPlay.js';
 import { handOffToForeground } from './handOffToForeground.js';
@@ -74,7 +75,7 @@ export default function AliasScreen({ ctx, type, onBack }) {
             return setMode('detail');
           }}
         />
-        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+        <StatusText message={error} />
       </Box>
     );
   }
@@ -121,7 +122,7 @@ export default function AliasScreen({ ctx, type, onBack }) {
             return setMode('replace');
           }}
         />
-        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+        <StatusText message={error} />
       </Box>
     );
   }
@@ -246,7 +247,7 @@ export default function AliasScreen({ ctx, type, onBack }) {
             setMode('songSearch');
           }}
         />
-        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+        <StatusText message={error} />
       </Box>
     );
   }
