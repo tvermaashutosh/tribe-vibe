@@ -4,6 +4,7 @@ import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
+import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
@@ -83,7 +84,7 @@ export default function Playlists({ ctx, onBack }) {
             return setMode('detail');
           }}
         />
-        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+        <StatusText message={error} />
       </Box>
     );
   }
@@ -169,7 +170,7 @@ export default function Playlists({ ctx, onBack }) {
           }}
         />
         <Text color={theme.dim}>(select a song to reorder, replace, or remove it)</Text>
-        {error && <Text color={theme.warning}>⚠ {error}</Text>}
+        <StatusText message={error} />
       </Box>
     );
   }
@@ -244,7 +245,7 @@ export default function Playlists({ ctx, onBack }) {
             setMode(pendingAction === 'add' ? 'addSong' : 'replaceSong');
           }}
         />
-        {songSearchStatus && <Text color={theme.warning}>⚠ {songSearchStatus}</Text>}
+        <StatusText message={songSearchStatus} />
       </Box>
     );
   }
