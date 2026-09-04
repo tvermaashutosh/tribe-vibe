@@ -60,7 +60,6 @@ export default function AliasScreen({ ctx, type, onBack }) {
       { label: type === 'song' ? '+ New song alias' : '+ New artist alias', value: '__add__', skipDefault: true },
       ...(aliases.length > 0 ? [DIVIDER_ITEM] : []),
       ...buildAliasListItems(aliases),
-      { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
@@ -70,7 +69,6 @@ export default function AliasScreen({ ctx, type, onBack }) {
           onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
-            if (item.value === '__back__') return onBack();
             if (item.value === '__add__') return setMode(type === 'song' ? 'songSearchInput' : 'artistName');
             setSelectedToken(item.value);
             return setMode('detail');
@@ -91,7 +89,6 @@ export default function AliasScreen({ ctx, type, onBack }) {
       { label: '⟳ Rename alias', value: 'rename' },
       ...(type === 'song' ? [{ label: '⟳ Replace (listen & re-pick)', value: 'replace' }] : []),
       { label: '- Delete alias', value: 'delete' },
-      { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
@@ -102,7 +99,6 @@ export default function AliasScreen({ ctx, type, onBack }) {
           onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
-            if (item.value === '__back__') return setMode('list');
             if (item.value === 'play') {
               return handOffToForeground(ctx, () =>
                 playSongForeground({
