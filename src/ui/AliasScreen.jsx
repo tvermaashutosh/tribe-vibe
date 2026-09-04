@@ -52,10 +52,14 @@ export default function AliasScreen({ ctx, type, onBack }) {
   );
 
   if (mode === 'list') {
+    // "+ New ..." sits above the list, but isn't where the screen opens —
+    // skipDefault (see skipListNav.js) leaves it fully reachable by arrow
+    // keys while SkipList's own default landing spot falls through to the
+    // first real song/artist alias instead, same as it always used to.
     const items = [
-      ...buildAliasListItems(aliases),
+      { label: type === 'song' ? '+ New song alias' : '+ New artist alias', value: '__add__', skipDefault: true },
       ...(aliases.length > 0 ? [DIVIDER_ITEM] : []),
-      { label: type === 'song' ? '+ New song alias' : '+ New artist alias', value: '__add__' },
+      ...buildAliasListItems(aliases),
       { label: '‹ Back', value: '__back__' },
     ];
     return (
