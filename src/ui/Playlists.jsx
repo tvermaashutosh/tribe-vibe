@@ -61,10 +61,14 @@ export default function Playlists({ ctx, onBack }) {
   );
 
   if (mode === 'list') {
+    // "+ New playlist" sits above the list, but isn't where the screen opens
+    // — skipDefault (see skipListNav.js) leaves it fully reachable by arrow
+    // keys while SkipList's own default landing spot falls through to the
+    // first real playlist instead, same as it always used to.
     const items = [
-      ...buildPlaylistListItems(playlists),
+      { label: '+ New playlist', value: '__add__', skipDefault: true },
       ...(playlists.length > 0 ? [DIVIDER_ITEM] : []),
-      { label: '+ New playlist', value: '__add__' },
+      ...buildPlaylistListItems(playlists),
       { label: '‹ Back', value: '__back__' },
     ];
     return (
