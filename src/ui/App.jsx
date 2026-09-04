@@ -22,7 +22,7 @@ export default function App({ ctx }) {
       <Text bold color={theme.accent}>
         tribe-vibe
       </Text>
-      {screen === 'main' && <MainMenu ctx={ctx} onNavigate={setScreen} />}
+      {screen === 'main' && <MainMenu onNavigate={setScreen} />}
       {screen === 'play' && <Play ctx={ctx} onBack={() => setScreen('main')} />}
       {screen === 'songs' && <AliasScreen ctx={ctx} type="song" onBack={() => setScreen('main')} />}
       {screen === 'playlists' && <Playlists ctx={ctx} onBack={() => setScreen('main')} />}
