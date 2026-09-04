@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
+import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
@@ -162,7 +163,7 @@ export default function Play({ ctx, onBack }) {
             <Text color={theme.dim}>(↑/↓ browse · enter plays the highlighted one when the box is empty)</Text>
           </Box>
         )}
-        {status && <Text color={theme.warning}>⚠ {status}</Text>}
+        <StatusText message={status} />
       </Box>
     );
   }
