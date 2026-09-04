@@ -82,12 +82,16 @@ export class YoutubeResolver {
     ]);
     if (spawnError) throw this.missingBinaryError(spawnError);
     if (code !== 0) throw enrichError(stderr, 'yt-dlp search failed', this.platform.getYtDlpConfigHint());
+    // YouTube titles themselves sometimes carry stray leading/trailing
+    // whitespace — yt-dlp passes that straight through in --dump-json, and
+    // left over it misaligns the Picker's own result list (some rows start
+    // right under the ❯, others a couple of columns in).
     return stdout
       .trim()
       .split('\n')
       .filter(Boolean)
       .map((line) => JSON.parse(line))
-      .map((entry) => ({ videoId: entry.id, title: entry.title, duration: entry.duration }));
+      .map((entry) => ({ videoId: entry.id, title: entry.title.trim(), duration: entry.duration }));
   }
 
   // Downloads the audio to a real local file and hands mpv that instead of a

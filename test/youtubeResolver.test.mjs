@@ -107,6 +107,28 @@ function withMissingYtdlp(fn) {
   };
 }
 
+// YouTube titles sometimes carry stray leading/trailing whitespace, and
+// yt-dlp's --dump-json passes that straight through — left untrimmed it
+// misaligns the Picker's own result list against every other (already
+// clean) row.
+test('search trims stray leading/trailing whitespace off a result title', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-ytdlp-'));
+  fs.writeFileSync(
+    path.join(dir, 'yt-dlp'),
+    `#!/bin/sh\necho '{"id":"x","title":"  BLACKPINK - Forever Young  ","duration":240}'\nexit 0\n`,
+    { mode: 0o755 },
+  );
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${dir}:${originalPath}`;
+  try {
+    const resolver = new YoutubeResolver(fakePlatform());
+    const [result] = await resolver.search('some query', 5);
+    assert.equal(result.title, 'BLACKPINK - Forever Young');
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
 test(
   'search names the exact install command when yt-dlp is missing',
   withMissingYtdlp(async () => {
