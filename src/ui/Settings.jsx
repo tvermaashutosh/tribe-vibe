@@ -45,7 +45,6 @@ export default function Settings({ ctx, onBack }) {
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
-    { label: '‹ Back', value: '__back__' },
   ];
 
   if (editing) {
@@ -134,7 +133,6 @@ export default function Settings({ ctx, onBack }) {
             {check.fix && <Text color={theme.dim}> → {check.fix}</Text>}
           </Box>
         ))}
-        <SelectInput items={[{ label: '‹ Back', value: '__back__' }]} onSelect={() => setMode('list')} />
       </Box>
     );
   }
@@ -147,7 +145,6 @@ export default function Settings({ ctx, onBack }) {
         onHighlight={() => showStatus(null)}
         onSelect={async (item) => {
           showStatus(null);
-          if (item.value === '__back__') return onBack();
           if (item.value === '__troubleshoot__') {
             setMode('troubleshoot');
             setDiagnostics(null);
