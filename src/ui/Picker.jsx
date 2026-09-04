@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import SkipList from './SkipList.jsx';
+import StatusText from './StatusText.jsx';
 import { DIVIDER_ITEM } from './divider.js';
-import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import { theme } from './theme.js';
 
 // The shared Search -> List -> Listen -> Pick flow. Reused across several
@@ -119,7 +119,7 @@ export default function Picker({
           }}
           onSubmit={() => setPhase('searching')}
         />
-        {error && <Text color={theme.error}>✗ {error}</Text>}
+        <StatusText message={error} level="error" />
       </Box>
     );
   }
@@ -204,11 +204,7 @@ export default function Picker({
         );
       })}
       {results.length > 0 && <Text color={theme.dim}>({hints.join(' · ')})</Text>}
-      {status && (
-        <Text color={STATUS_COLOR[statusLevel]}>
-          {STATUS_ICON[statusLevel]} {status}
-        </Text>
-      )}
+      <StatusText message={status} level={statusLevel} />
     </Box>
   );
 }
