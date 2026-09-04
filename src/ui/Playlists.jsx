@@ -69,7 +69,6 @@ export default function Playlists({ ctx, onBack }) {
       { label: '+ New playlist', value: '__add__', skipDefault: true },
       ...(playlists.length > 0 ? [DIVIDER_ITEM] : []),
       ...buildPlaylistListItems(playlists),
-      { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
@@ -79,7 +78,6 @@ export default function Playlists({ ctx, onBack }) {
           onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
-            if (item.value === '__back__') return onBack();
             if (item.value === '__add__') return setMode('createName');
             setSelected(item.value);
             return setMode('detail');
@@ -126,7 +124,6 @@ export default function Playlists({ ctx, onBack }) {
       { label: '+ Add song', value: '__addSong__' },
       { label: '⟳ Rename playlist', value: '__rename__' },
       { label: '- Delete playlist', value: '__delete__' },
-      { label: '‹ Back', value: '__back__' },
     ];
     return (
       <Box flexDirection="column">
@@ -136,7 +133,6 @@ export default function Playlists({ ctx, onBack }) {
           onHighlight={() => setError(null)}
           onSelect={(item) => {
             setError(null);
-            if (item.value === '__back__') return setMode('list');
             if (item.value === '__play__') {
               // Same check Play view's own browse list makes before handing
               // off — an empty playlist is nothing to play, not a reason to
@@ -283,14 +279,12 @@ export default function Playlists({ ctx, onBack }) {
       { label: '↓ Move down', value: 'down' },
       { label: '⟳ Replace song (listen & re-pick)', value: 'replace' },
       { label: '- Remove song', value: 'remove' },
-      { label: '‹ Back', value: '__back__' },
     ];
     return (
       <SelectInput
         items={items}
         onSelect={(item) => {
           setError(null);
-          if (item.value === '__back__') return setMode('detail');
           if (item.value === 'remove') {
             ctx.playlistRepo.removeSong(selected, editIndex);
             return setMode('detail');
