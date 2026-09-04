@@ -7,6 +7,7 @@ import { exportAboutPdf } from '../export/exportAboutPdf.js';
 import { runDiagnostics } from '../diagnostics/runDiagnostics.js';
 import { resetAllData } from '../repository/resetAllData.js';
 import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
+import StatusText from './StatusText.jsx';
 import { theme } from './theme.js';
 
 // `editing` holds the raw settings key ('top') — this maps it to the
@@ -182,11 +183,7 @@ export default function Settings({ ctx, onBack }) {
           return undefined;
         }}
       />
-      {status && (
-        <Text color={STATUS_COLOR[statusLevel]}>
-          {STATUS_ICON[statusLevel]} {status}
-        </Text>
-      )}
+      <StatusText message={status} level={statusLevel} />
     </Box>
   );
 }
