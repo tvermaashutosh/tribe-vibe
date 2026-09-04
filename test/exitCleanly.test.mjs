@@ -17,8 +17,8 @@ function lockPath(platform) {
 
 // process.exit() is stubbed rather than actually called — calling the real
 // one would kill this test process. The order this proves is the whole
-// point of the fix: MainMenu.jsx's Exit and App.jsx's Escape call
-// process.exit(0) directly with no unmount() first, so cli.js's own
+// point of the fix: App.jsx's Escape at the main menu calls process.exit(0)
+// directly with no unmount() first, so cli.js's own
 // try { ... } finally { releaseSessionLock } never gets a chance to run —
 // this must release the lock itself, before exiting, not after.
 test('exitCleanly releases the session lock before calling process.exit', () => {
