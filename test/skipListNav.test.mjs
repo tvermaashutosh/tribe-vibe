@@ -15,6 +15,16 @@ test('findFirstSelectable falls back to 0 when every item is (implausibly) a div
   assert.equal(findFirstSelectable(items('---', '---')), 0);
 });
 
+test('findFirstSelectable skips a leading skipDefault item, landing on the first real item after it', () => {
+  const list = [{ value: '__add__', label: '+ New', skipDefault: true }, { divider: true, value: '__divider__', label: '---' }, { value: 'a', label: 'a' }];
+  assert.equal(findFirstSelectable(list), 2);
+});
+
+test('findFirstSelectable falls back to the first skipDefault item when nothing else is selectable', () => {
+  const list = [{ value: '__add__', label: '+ New', skipDefault: true }, { divider: true, value: '__divider__', label: '---' }];
+  assert.equal(findFirstSelectable(list), 0);
+});
+
 test('moveSelection down skips straight over a divider to the next real item', () => {
   const list = items('a', '---', 'b');
   assert.equal(moveSelection(list, 0, 1), 2);
