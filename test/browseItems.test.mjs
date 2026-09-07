@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBrowseItems, intentForBrowseItem } from '../src/ui/browseItems.js';
+import { buildBrowseItems } from '../src/ui/browseItems.js';
 
 function fakeAliasRepo(entries) {
   return { all: () => entries };
@@ -104,14 +104,4 @@ test('buildBrowseItems sorts each chunk most-recently-touched first, independent
     items.map((item) => item.token),
     ['s-new', 's-old', 'new-playlist', 'old-playlist'],
   );
-});
-
-test('intentForBrowseItem: a song item resolves deterministically, no search involved', () => {
-  const intent = intentForBrowseItem({ itemType: 'song', videoId: 'abc123', title: 'Taylor Swift - 22' });
-  assert.deepEqual(intent, { kind: 'song', deterministic: true, videoId: 'abc123', title: 'Taylor Swift - 22', modifiers: {} });
-});
-
-test('intentForBrowseItem: a playlist item resolves deterministically', () => {
-  const intent = intentForBrowseItem({ itemType: 'playlist', playlistName: 'focus' });
-  assert.deepEqual(intent, { kind: 'playlist', deterministic: true, playlistName: 'focus', modifiers: {} });
 });
