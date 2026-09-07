@@ -38,7 +38,7 @@ test('resetAllData clears aliases, playlists, resets settings to defaults, and d
 
   assert.deepEqual(aliasRepo.all(), []);
   assert.deepEqual(playlistRepo.all(), []);
-  assert.deepEqual(saved, [{ top: 5 }]);
+  assert.deepEqual(saved, [{ top: 5, concurrentDownloads: 2 }]);
   assert.equal(fs.existsSync(cacheDir), false);
 });
 
