@@ -10,12 +10,10 @@ import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import StatusText from './StatusText.jsx';
 import { theme } from './theme.js';
 
-// `editing` holds the raw settings key ('top') — this maps it to the
-// human-facing word used in prompts/messages, so a reader never sees the
-// internal key name itself. Only one editable setting exists today, but
-// this stays a map (not an inline ternary) so a second one doesn't need its
-// own branch bolted on later.
-const SETTING_LABEL = { top: 'result count' };
+// `editing` holds the raw settings key ('top', 'concurrentDownloads') — this
+// maps it to the human-facing words used in prompts/messages, so a reader
+// never sees the internal key name itself.
+const SETTING_LABEL = { top: 'result count', concurrentDownloads: 'concurrent downloads' };
 
 export default function Settings({ ctx, onBack }) {
   const [mode, setMode] = useState('list');
@@ -44,6 +42,7 @@ export default function Settings({ ctx, onBack }) {
     { label: '⇩ Export about', value: '__about__' },
     { label: '⇩ Export data', value: '__export__' },
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
+    { label: `⇊ Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
   ];
