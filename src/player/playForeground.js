@@ -57,7 +57,13 @@ export function playForeground({ files, loop, platform }) {
   // at all (verified live: mpv passes it straight through, no shell/quoting
   // involved since this is a literal argv element, not a shell string).
   const args = ['--no-video', '--term-osd-bar', '--term-playing-msg=Playing: \x1b[36m${media-title}\x1b[39m'];
-  if (loop) args.push(`--loop=${loop === true ? 'inf' : loop}`);
+  // --loop-playlist, not --loop (an alias for --loop-file) — the latter
+  // reloads/seeks just the current file forever and never advances past it,
+  // so a multi-song playlist looped with it only ever replayed song 1.
+  // --loop-playlist restarts from the first file once the last one ends,
+  // which is also exactly right for a lone song: a 1-file "playlist" looped
+  // behaves the same as looping that file directly.
+  if (loop) args.push(`--loop-playlist=${loop === true ? 'inf' : loop}`);
 
   for (const file of files) {
     if (file.title) args.push('--{', `--force-media-title=${file.title}`, file.path, '--}');

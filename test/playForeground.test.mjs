@@ -131,6 +131,48 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
   }
 });
 
+test('playForeground loops the whole playlist, not just the first file', async () => {
+  // --loop is an alias for --loop-file — it reloads/seeks just the current
+  // file forever and never advances the playlist. A real playlist of several
+  // songs looped with it only ever replayed song 1 (confirmed live). This
+  // locks in --loop-playlist instead, which restarts from file 1 once the
+  // last one ends.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  const argvFile = path.join(dir, 'argv.txt');
+  fs.writeFileSync(path.join(dir, 'mpv'), `#!/bin/sh\necho "$@" > "${argvFile}"\nexit 0\n`, { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${dir}:${originalPath}`;
+  try {
+    await playForeground({
+      files: [{ path: '/cache/a.m4a' }, { path: '/cache/b.m4a' }],
+      loop: true,
+      platform: fakePlatform(),
+    });
+    const argv = fs.readFileSync(argvFile, 'utf8');
+    assert.match(argv, /--loop-playlist=inf/);
+    assert.doesNotMatch(argv, /(?:^|\s)--loop=/);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+test('playForeground passes a finite loop count straight through to --loop-playlist', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  const argvFile = path.join(dir, 'argv.txt');
+  fs.writeFileSync(path.join(dir, 'mpv'), `#!/bin/sh\necho "$@" > "${argvFile}"\nexit 0\n`, { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${dir}:${originalPath}`;
+  try {
+    await playForeground({ files: [{ path: '/cache/a.m4a' }], loop: '3', platform: fakePlatform() });
+    const argv = fs.readFileSync(argvFile, 'utf8');
+    assert.match(argv, /--loop-playlist=3/);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
 test('playForeground runs "stty sane" after mpv exits, when stdin looks like a real tty', async () => {
   // Restoring the terminal after a raw-mode child is a real tty operation —
   // there's no way to assert the terminal actually ended up sane without one
