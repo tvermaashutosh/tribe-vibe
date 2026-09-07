@@ -6,7 +6,7 @@ import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
-import { buildBrowseItems, intentForBrowseItem } from './browseItems.js';
+import { buildBrowseItems } from './browseItems.js';
 import { theme } from './theme.js';
 import { formatCliStatus } from './statusLevel.js';
 import { handOffToForeground } from './handOffToForeground.js';
@@ -37,6 +37,12 @@ export default function Play({ ctx, onBack }) {
   const [busy, setBusy] = useState(false);
   const [picking, setPicking] = useState(false);
   const [browseIndex, setBrowseIndex] = useState(0);
+  // Bumped every time browsing overwrites query below — forces TextInput to
+  // remount, since ink-text-input only resets its own internal cursor to the
+  // end of an externally-set value under specific conditions (it doesn't
+  // reliably do so from an empty box), and typing right after a fill should
+  // always append, not land wherever a stale cursor position happened to be.
+  const [fillNonce, setFillNonce] = useState(0);
 
   const browseItems = buildBrowseItems(ctx.aliasRepo, ctx.playlistRepo);
 
@@ -107,12 +113,23 @@ export default function Play({ ctx, onBack }) {
   // moves the browse-list selection with no conflict, whether or not the
   // search box currently has focus/content. Clamped, not wrapped, matching
   // Picker's own listing navigation.
+  //
+  // Browsing also overwrites the search box with the highlighted item's own
+  // token, replacing whatever was typed there — rather than a separate
+  // one-keystroke way to play it outright, this is now just a fast way to
+  // fill in what you'd have typed anyway, leaving room to append a modifier
+  // (loop=10, say) before actually submitting. Submitting then runs through
+  // the exact same resolveTypedInput path a manually-typed token would: an
+  // untouched fill plays outright (still deterministic), an edited one
+  // searches instead if it no longer resolves to anything exact.
   useInput(
     (input, key) => {
       if (!key.upArrow && !key.downArrow) return;
       setStatus(null);
-      if (key.upArrow) setBrowseIndex((i) => Math.max(0, i - 1));
-      if (key.downArrow) setBrowseIndex((i) => Math.min(browseItems.length - 1, i + 1));
+      const nextIndex = key.upArrow ? Math.max(0, browseIndex - 1) : Math.min(browseItems.length - 1, browseIndex + 1);
+      setBrowseIndex(nextIndex);
+      setQuery(browseItems[nextIndex].token);
+      setFillNonce((n) => n + 1);
     },
     { isActive: !busy && !picking && browseItems.length > 0 },
   );
@@ -132,6 +149,7 @@ export default function Play({ ctx, onBack }) {
         <Text bold color={theme.secondary}>Play</Text>
         <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>
         <TextInput
+          key={fillNonce}
           value={query}
           onChange={(value) => {
             setStatus(null);
@@ -139,13 +157,6 @@ export default function Play({ ctx, onBack }) {
           }}
           onSubmit={() => {
             setStatus(null);
-            // An empty box plays whatever's highlighted below instead of
-            // resolving an empty string — that's the whole point of listing
-            // aliases/playlists here: browse instead of typing.
-            if (query.trim() === '' && browseItems.length > 0) {
-              playIntent(intentForBrowseItem(browseItems[browseIndex]));
-              return;
-            }
             playIntent(resolveTypedInput(query, { aliasRepo: ctx.aliasRepo, playlistRepo: ctx.playlistRepo }));
           }}
         />
@@ -160,7 +171,7 @@ export default function Play({ ctx, onBack }) {
                 {item.label}
               </Text>
             ))}
-            <Text color={theme.dim}>(↑/↓ browse · enter plays the highlighted one when the box is empty)</Text>
+            <Text color={theme.dim}>(↑/↓ browse — fills the box, edit freely, enter to play or search)</Text>
           </Box>
         )}
         <StatusText message={status} />

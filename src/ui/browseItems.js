@@ -8,11 +8,11 @@ import { alignColumns } from './alignColumns.js';
 // within each chunk most-recently-touched first — playlist names live in
 // the exact same flat token namespace as aliases (TokenRegistry/
 // assertValidToken already enforce that non-intersection), so this is just
-// "everything you can play with one click," listed. Artist aliases are
-// deliberately never shown here: picking one doesn't play anything by
-// itself, it opens an ambiguous search — everything in this list, by
-// contrast, plays in a single click, the same way selecting it here would.
-// The Artists screen is where an artist alias actually lives now.
+// "everything you can type to play," listed. Artist aliases are deliberately
+// never shown here: picking one doesn't play anything by itself, it opens an
+// ambiguous search — everything in this list, by contrast, resolves
+// deterministically the same way typing its own token would. The Artists
+// screen is where an artist alias actually lives now.
 //
 // Every label is "token → value (type)" columnar-aligned across the WHOLE
 // list — the token column is as wide as the longest token among every song
@@ -39,15 +39,4 @@ export function buildBrowseItems(aliasRepo, playlistRepo) {
   const entries = [...songs, ...playlists];
   const columns = alignColumns(entries.map((entry) => [entry.token, '→', entry.displayValue, `(${entry.displayType})`]));
   return entries.map(({ displayValue, displayType, ...entry }, i) => ({ ...entry, label: columns[i].join('  ') }));
-}
-
-// Selecting an item from the browse list plays it exactly as if you'd typed
-// that token and pressed enter — both kinds shown here resolve
-// deterministically, no ambiguous search involved. Building the intent
-// directly from the repo entry (we already have videoId/title/name in hand)
-// rather than reconstructing a query string and re-parsing it through
-// resolveTypedInput.
-export function intentForBrowseItem(item) {
-  if (item.itemType === 'song') return { kind: 'song', deterministic: true, videoId: item.videoId, title: item.title, modifiers: {} };
-  return { kind: 'playlist', deterministic: true, playlistName: item.playlistName, modifiers: {} };
 }
