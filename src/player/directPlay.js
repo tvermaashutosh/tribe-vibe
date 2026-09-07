@@ -1,4 +1,5 @@
 import { playForeground } from './playForeground.js';
+import { downloadPlaylistFiles } from './downloadPlaylistFiles.js';
 import { trace } from '../debugTrace.js';
 
 // Shared by the typed CLI and the Ink "Play" screen — both hand off to a real
@@ -22,10 +23,13 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
   trace('playSongForeground: playForeground resolved, returning');
 }
 
-// Every song is downloaded before mpv ever starts — one at a time, in
-// playlist order, same as a single song's download-then-play. mpv is never
-// handed a raw YouTube URL here; that's what caused header mismatches and
-// pipe-format-detection failures in the first place (see YoutubeResolver).
+// Every song is downloaded before mpv ever starts, in playlist order — one
+// at a time by default, or up to `concurrency` at once when a caller passes
+// Settings' own concurrentDownloads through (see downloadPlaylistFiles.js).
+// Either way the resulting file list is always in playlist order, never
+// download-completion order. mpv is never handed a raw YouTube URL here;
+// that's what caused header mismatches and pipe-format-detection failures in
+// the first place (see YoutubeResolver).
 //
 // onPlaylistFound fires immediately, before any downloading — that's the
 // accurate moment to print what's queued up, not after the whole thing has
@@ -45,7 +49,7 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // one just gets the skip silently (still traced) rather than a crash either
 // way. Only if every song fails is there genuinely nothing to play, which
 // throws same as the empty-playlist case does when onEmpty isn't given.
-export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, onPlaylistFound, onEmpty, onSongFailed, onReady }) {
+export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, concurrency, onPlaylistFound, onEmpty, onSongFailed, onReady }) {
   const playlist = playlistRepo.all().find((entry) => entry.name === playlistName);
   if (!playlist) throw new Error(`No playlist named "${playlistName}"`);
   if (playlist.songs.length === 0) {
@@ -55,16 +59,13 @@ export async function playPlaylistForeground({ resolver, platform, playlistRepo,
 
   if (onPlaylistFound) onPlaylistFound(playlist);
 
-  const files = [];
-  for (const song of playlist.songs) {
-    try {
-      const path = await resolver.downloadAudio(song.videoId, platform.getCacheDir());
-      files.push({ path, title: song.title });
-    } catch (err) {
-      trace(`playPlaylistForeground: skipping "${song.title}" (${song.videoId}) — download failed: ${err.message}`);
-      if (onSongFailed) onSongFailed(song, err);
-    }
-  }
+  const files = await downloadPlaylistFiles({
+    resolver,
+    cacheDir: platform.getCacheDir(),
+    songs: playlist.songs,
+    concurrency,
+    onSongFailed,
+  });
   if (files.length === 0) throw new Error(`Playlist "${playlistName}": every song failed to download`);
   if (onReady) onReady(playlist);
   await playForeground({ files, loop, platform });
