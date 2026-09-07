@@ -21,7 +21,12 @@ import { handOffToForeground } from './handOffToForeground.js';
 // menu and typing `tv <song>` in a shell now behave identically end to end,
 // down to handing your terminal back once playback actually finishes.
 export default function Play({ ctx, onBack }) {
-  const [query, setQuery] = useState('');
+  // Computed before query below, not after — its very first item is already
+  // shown highlighted (❯) the moment this screen opens, so the search box
+  // should already match it too, not just once you actually press an arrow.
+  const browseItems = buildBrowseItems(ctx.aliasRepo, ctx.playlistRepo);
+
+  const [query, setQuery] = useState(() => browseItems[0]?.token ?? '');
   const [searchQuery, setSearchQuery] = useState('');
   // An ambiguous search still carries whatever -l/-loop the user typed —
   // remembered here since the Picker below is a whole separate render pass,
@@ -43,8 +48,6 @@ export default function Play({ ctx, onBack }) {
   // reliably do so from an empty box), and typing right after a fill should
   // always append, not land wherever a stale cursor position happened to be.
   const [fillNonce, setFillNonce] = useState(0);
-
-  const browseItems = buildBrowseItems(ctx.aliasRepo, ctx.playlistRepo);
 
   // The one place both the typed box and the browse list end up — same
   // branching the typed CLI does for song/playlist/search, so an item picked
