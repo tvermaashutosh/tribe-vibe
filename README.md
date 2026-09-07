@@ -69,6 +69,7 @@ These control a background player, separate from a directly typed `tv <song>` �
 - **Export about** — writes a one-page, text-only PDF (`~/Downloads/tribe-vibe-about.pdf`) covering what tribe-vibe is, its low-level design, and the design patterns it uses.
 - **Export data** — writes every song, playlist, and artist alias to `~/Downloads/tribe-vibe-export.xlsx`.
 - **Result count** — how many results the Picker shows per search (default 5).
+- **Concurrent downloads** — how many songs a playlist play downloads at once, instead of strictly one at a time (default 2).
 - **Troubleshoot** — read-only checks for mpv/yt-dlp/hotkey-daemon installation, available updates, and writable data directories, each with a suggested fix.
 - **Reset all data** — wipes aliases, playlists, settings, and the audio cache, after a yes/no confirmation that defaults to "no."
 
