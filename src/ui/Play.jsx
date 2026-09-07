@@ -92,6 +92,7 @@ export default function Play({ ctx, onBack }) {
           playlistRepo: ctx.playlistRepo,
           playlistName: intent.playlistName,
           loop: intent.modifiers?.loop,
+          concurrency: ctx.settings.concurrentDownloads,
           onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
           onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
         }),
