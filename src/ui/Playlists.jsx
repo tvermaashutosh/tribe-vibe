@@ -148,6 +148,7 @@ export default function Playlists({ ctx, onBack }) {
                   platform: ctx.platform,
                   playlistRepo: ctx.playlistRepo,
                   playlistName: selectedPlaylist.name,
+                  concurrency: ctx.settings.concurrentDownloads,
                   onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
                   onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
                 }),
