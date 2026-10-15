@@ -199,7 +199,7 @@ export default function Picker({
           <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
             {prefix}
             {result.title}
-            {suffix}
+            {suffix && <Text color={theme.warning}>{suffix}</Text>}
           </Text>
         );
       })}
