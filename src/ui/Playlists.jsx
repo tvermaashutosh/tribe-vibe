@@ -6,7 +6,7 @@ import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
-import { playPlaylistForeground } from '../player/directPlay.js';
+import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
 import { formatPlaylistSongList } from '../player/playlistSongList.js';
 import { formatCliStatus } from './statusLevel.js';
 import { handOffToForeground } from './handOffToForeground.js';
@@ -277,6 +277,7 @@ export default function Playlists({ ctx, onBack }) {
 
   if (mode === 'songMenu') {
     const items = [
+      { label: '▶ Play', value: 'play' },
       { label: '↑ Move up', value: 'up' },
       { label: '↓ Move down', value: 'down' },
       { label: '⟳ Replace song (listen & re-pick)', value: 'replace' },
@@ -287,6 +288,18 @@ export default function Playlists({ ctx, onBack }) {
         items={items}
         onSelect={(item) => {
           setError(null);
+          if (item.value === 'play') {
+            const song = selectedPlaylist.songs[editIndex];
+            return handOffToForeground(ctx, () =>
+              playSongForeground({
+                resolver: ctx.resolver,
+                platform: ctx.platform,
+                videoId: song.videoId,
+                title: song.title,
+                onReady: (localFile) => console.log(`Playing: ${localFile}`),
+              }),
+            );
+          }
           if (item.value === 'remove') {
             ctx.playlistRepo.removeSong(selected, editIndex);
             return setMode('detail');
