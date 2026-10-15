@@ -172,7 +172,7 @@ export default function Play({ ctx, onBack }) {
             {browseItems.map((item, i) => (
               <Text key={item.token} color={i === browseIndex ? theme.selected : undefined}>
                 {i === browseIndex ? '❯ ' : '  '}
-                {item.columns[0]}  {item.columns[1]}  {item.columns[2]}  <Text color={theme.warning}>{item.columns[3]}</Text>
+                {item.columns[0]}  {item.columns[1]}  {item.columns[2]}  {item.columns[3]}
               </Text>
             ))}
             <Text color={theme.dim}>(↑/↓ browse — fills the box, edit freely, enter to play or search)</Text>

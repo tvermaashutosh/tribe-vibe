@@ -201,7 +201,7 @@ export default function Picker({
           <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
             {prefix}
             {row.title}{row.duration && '  '}
-            {row.duration && <Text color={theme.warning}>{row.duration}</Text>}
+            {row.duration}
           </Text>
         );
       })}
