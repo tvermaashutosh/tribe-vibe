@@ -117,11 +117,12 @@ export default function Playlists({ ctx, onBack }) {
       // ambiguous search, nothing — so it's the very first option here,
       // exactly like Play view's own browse list would play it.
       { label: '▶ Play', value: '__play__' },
+      ...(selectedPlaylist.songs.length > 0 ? [{ ...DIVIDER_ITEM, value: '__divider__play-songs' }] : []),
       ...selectedPlaylist.songs.map((song, i) => ({
         label: `${i + 1}. ${song.title}`,
         value: `song:${i}`,
       })),
-      ...(selectedPlaylist.songs.length > 0 ? [DIVIDER_ITEM] : []),
+      ...(selectedPlaylist.songs.length > 0 ? [{ ...DIVIDER_ITEM, value: '__divider__songs-actions' }] : []),
       { label: '+ Add song', value: '__addSong__' },
       { label: '⟳ Rename playlist', value: '__rename__' },
       { label: '- Delete playlist', value: '__delete__' },
