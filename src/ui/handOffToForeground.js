@@ -16,6 +16,11 @@ import { exitCleanly } from './exitCleanly.js';
 // since by this point the Ink UI is already gone and there's nothing left
 // to return to.
 export async function handOffToForeground(ctx, playFn) {
+  // launchMenu() resolves as soon as Ink unmounts, which unwinds cli.js's
+  // ordinary finally block. Transfer the acquired lease before unmounting so
+  // that finally leaves it in place until foreground playback exits.
+  const sessionLock = ctx.sessionLock;
+  if (sessionLock) sessionLock.transfer();
   trace('handOffToForeground: calling unmountMenu()');
   ctx.unmountMenu();
   trace('handOffToForeground: unmountMenu() returned, calling playFn()');
@@ -24,10 +29,10 @@ export async function handOffToForeground(ctx, playFn) {
     trace('handOffToForeground: playFn() resolved, calling closeDaemon()');
     ctx.closeDaemon();
     trace('handOffToForeground: closeDaemon() returned, calling exitCleanly(0)');
-    exitCleanly(ctx.platform);
+    exitCleanly(ctx.platform, 0, sessionLock);
   } catch (err) {
     trace(`handOffToForeground: caught error: ${err.message}`);
     console.error(formatCliStatus('error', `tv error: ${err.message}`));
-    exitCleanly(ctx.platform, 1);
+    exitCleanly(ctx.platform, 1, sessionLock);
   }
 }

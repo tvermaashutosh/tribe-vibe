@@ -23,7 +23,8 @@ function lockPath(platform) {
 // this must release the lock itself, before exiting, not after.
 test('exitCleanly releases the session lock before calling process.exit', () => {
   const platform = fakePlatform();
-  assert.equal(acquireSessionLock(platform), true);
+  const lease = acquireSessionLock(platform);
+  assert.ok(lease);
   assert.ok(fs.existsSync(lockPath(platform)));
 
   const originalExit = process.exit;
@@ -34,13 +35,29 @@ test('exitCleanly releases the session lock before calling process.exit', () => 
     lockGoneWhenExitCalled = !fs.existsSync(lockPath(platform));
   };
   try {
-    exitCleanly(platform, 0);
+    exitCleanly(platform, 0, lease);
   } finally {
     process.exit = originalExit;
   }
 
   assert.equal(exitCode, 0);
   assert.equal(lockGoneWhenExitCalled, true);
+});
+
+test('exitCleanly does not release a lock when this process has no lease', () => {
+  const platform = fakePlatform();
+  const lease = acquireSessionLock(platform);
+  assert.ok(lease);
+  const originalExit = process.exit;
+  process.exit = () => {};
+  try {
+    exitCleanly(platform);
+  } finally {
+    process.exit = originalExit;
+  }
+
+  assert.equal(fs.existsSync(lockPath(platform)), true);
+  lease.release();
 });
 
 test('exitCleanly defaults to exit code 0', () => {

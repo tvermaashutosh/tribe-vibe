@@ -29,23 +29,13 @@ export function parseSingleFlag(args) {
   return args[0].replace(/^-+/, '').toLowerCase();
 }
 
-// Matches tswift's own `trap cleanup EXIT INT TERM` — releases the session
-// lock the instant an external signal arrives, rather than only in the
-// finally block below, which an abrupt kill can skip straight past entirely
-// (Node's default disposition for an unhandled signal is immediate
-// termination with zero cleanup). Confirmed live, twice: a killed test
-// process left its lock stuck for the full staleness window before this
-// existed.
-//
-// Deliberately does NOT call process.exit() itself. Whatever's actually
-// running when the signal arrives — mpv, or yt-dlp mid-download — shares
-// this process's group and receives the very same signal independently;
-// letting its own death naturally drive this process's already-correct
-// exit path (through whichever await it was blocking) avoids racing
-// playForeground.js's own post-mpv-exit handling, which is deliberately
-// inert while mpv still owns the terminal for exactly this reason.
-function guardSessionLock(platform) {
-  const onSignal = () => releaseSessionLock(platform);
+// Keep Node from taking its default immediate-exit path on a signal, which
+// would skip the finally block below. The child process shares this process's
+// group and receives the signal too; its normal exit settles the active await
+// and releases the lock. Do not release here: mpv may still be reading cache
+// files after the signal arrives.
+function guardSessionLock() {
+  const onSignal = (signal) => trace(`cli.js: received ${signal}; retaining cache lock until active work exits`);
   const signals = Object.keys(SIGNAL_EXIT_CODES);
   for (const signal of signals) process.on(signal, onSignal);
   return () => {
@@ -107,21 +97,24 @@ export async function run(argv) {
   // exactly that data loss with the real playPlaylistForeground and
   // clearCacheDir. Only the process that wins the lock gets to wipe; every
   // other one just skips it this time rather than risk someone else's files.
-  const holdsSessionLock = !isControlFlag && acquireSessionLock(platform);
-  if (holdsSessionLock) {
+  const sessionLock = !isControlFlag && acquireSessionLock(platform);
+  if (sessionLock) {
     truncateTraceLogForNewSession();
     clearCacheDir(platform);
   }
-  const unguardLock = holdsSessionLock ? guardSessionLock(platform) : () => {};
+  const unguardLock = sessionLock ? guardSessionLock() : () => {};
   try {
-    return await runSession({ args, platform, isControlFlag, flag });
+    return await runSession({ args, platform, isControlFlag, flag, sessionLock });
   } finally {
     unguardLock();
-    if (holdsSessionLock) releaseSessionLock(platform);
+    // A menu play unmounts Ink before mpv starts, which ends launchMenu() and
+    // unwinds this finally block. The foreground handoff takes the lease and
+    // releases it only after playback ends.
+    if (sessionLock && !sessionLock.transferred) releaseSessionLock(platform, sessionLock);
   }
 }
 
-async function runSession({ args, platform, isControlFlag, flag }) {
+async function runSession({ args, platform, isControlFlag, flag, sessionLock }) {
   const aliasRepo = new AliasRepository(platform.getConfigDir());
   const playlistRepo = new PlaylistRepository(platform.getConfigDir());
   const settingsRepo = new SettingsRepository(platform.getConfigDir());
@@ -152,6 +145,7 @@ async function runSession({ args, platform, isControlFlag, flag }) {
     trace('cli.js: launching menu');
     await launchMenu({
       platform,
+      sessionLock,
       aliasRepo,
       playlistRepo,
       tokenRegistry,

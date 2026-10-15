@@ -14,7 +14,7 @@ export default function App({ ctx }) {
   // Every sub-screen's own escape handler already routes back to 'main' — this
   // only needs to cover the terminal case: escape at the main menu itself exits.
   useInput((input, key) => {
-    if (key.escape && screen === 'main') exitCleanly(ctx.platform);
+    if (key.escape && screen === 'main') exitCleanly(ctx.platform, 0, ctx.sessionLock);
   });
 
   return (
