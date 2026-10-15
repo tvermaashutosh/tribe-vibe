@@ -5,6 +5,7 @@ import SkipList from './SkipList.jsx';
 import StatusText from './StatusText.jsx';
 import { DIVIDER_ITEM } from './divider.js';
 import { theme } from './theme.js';
+import { buildSearchResultRows } from './searchResultRows.js';
 
 // The shared Search -> List -> Listen -> Pick flow. Reused across several
 // call sites: an ambiguous free-text play (confirm = play now), song-alias
@@ -187,6 +188,7 @@ export default function Picker({
   if (onSaveAlias) hints.push('a to save as alias');
   if (onAddToPlaylist) hints.push('p to add to playlist');
   hints.push('esc to cancel');
+  const resultRows = buildSearchResultRows(results);
 
   return (
     <Box flexDirection="column">
@@ -194,12 +196,12 @@ export default function Picker({
       {results.length === 0 && <Text color={theme.warning}>⚠ No results found — press esc and try a different search.</Text>}
       {results.map((result, i) => {
         const prefix = i === index ? '❯ ' : '  ';
-        const suffix = result.duration ? ` (${Math.round(result.duration)}s)` : '';
+        const row = resultRows[i];
         return (
           <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
             {prefix}
-            {result.title}
-            {suffix && <Text color={theme.warning}>{suffix}</Text>}
+            {row.title}{row.duration && '  '}
+            {row.duration && <Text color={theme.warning}>{row.duration}</Text>}
           </Text>
         );
       })}

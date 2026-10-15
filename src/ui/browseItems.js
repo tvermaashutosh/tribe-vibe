@@ -38,5 +38,9 @@ export function buildBrowseItems(aliasRepo, playlistRepo) {
   }));
   const entries = [...songs, ...playlists];
   const columns = alignColumns(entries.map((entry) => [entry.token, '→', entry.displayValue, `(${entry.displayType})`]));
-  return entries.map(({ displayValue, displayType, ...entry }, i) => ({ ...entry, label: columns[i].join('  ') }));
+  return entries.map(({ displayValue, displayType, ...entry }, i) => ({
+    ...entry,
+    columns: columns[i],
+    label: columns[i].join('  '),
+  }));
 }
