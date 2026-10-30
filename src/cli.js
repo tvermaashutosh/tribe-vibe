@@ -8,8 +8,6 @@ import { acquireSessionLock, releaseSessionLock } from './repository/sessionLock
 import { MpvDaemonSupervisor } from './player/mpvDaemonSupervisor.js';
 import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
-import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
-import { formatPlaylistSongList } from './player/playlistSongList.js';
 import { formatCliStatus } from './ui/statusLevel.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
@@ -107,9 +105,8 @@ export async function run(argv) {
     return await runSession({ args, platform, isControlFlag, flag, sessionLock });
   } finally {
     unguardLock();
-    // A menu play unmounts Ink before mpv starts, which ends launchMenu() and
-    // unwinds this finally block. The foreground handoff takes the lease and
-    // releases it only after playback ends.
+    // A foreground playback handoff transfers the lease and releases it once
+    // MPV exits; otherwise release it when the UI session ends.
     if (sessionLock && !sessionLock.transferred) releaseSessionLock(platform, sessionLock);
   }
 }
@@ -135,14 +132,8 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
     trace('cli.js: closeAndExit() returned');
   };
 
-  // No args -> the full Ink app. All alias/playlist/settings management lives
-  // here and only here — the typed grammar below never grows a management path.
-  // Confirmed plays from inside the menu hand off to a foreground mpv exactly
-  // like the direct CLI path below (see ui/Play.jsx) — the daemon connection
-  // (player/ipc) passed in here is only for the Picker's quick audition preview.
-  if (args.length === 0) {
+  const launchApp = async (initialIntent) => {
     const { launchMenu } = await import('../dist/ui.js');
-    trace('cli.js: launching menu');
     await launchMenu({
       platform,
       sessionLock,
@@ -154,16 +145,24 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
       closeDaemon: closeAndExit,
       settings: settingsRepo.all(),
       saveSettings: (next) => settingsRepo.save(next),
+      initialIntent,
     });
-    trace('cli.js: launchMenu() resolved (Ink unmounted), calling closeAndExit() and returning from run()');
+    trace('cli.js: launchMenu() resolved; closing daemon connection');
     return closeAndExit();
+  };
+
+  // No args -> the full Ink app. All alias/playlist/settings management lives
+  // here and only here — the typed grammar below never grows a management path.
+  // Playback opens the Now Playing screen, then hands the terminal to MPV so
+  // its native progress bar, logs, and keybindings remain available.
+  if (args.length === 0) {
+    trace('cli.js: launching menu');
+    return launchApp();
   }
 
   // A single recognized control flag, meant to be hotkey-bound — never typed
   // as part of a search, never mixed with a play target. These target the
-  // background daemon, same as always — they have nothing to act on while a
-  // foreground play (below) is running, which is the honest trade-off of
-  // matching tswift's own single-process model. Deliberately checked against
+  // background daemon. Deliberately checked against
   // the real CONTROL_FLAGS list (not just "starts with -"), since -l/-loop is
   // also dash-prefixed but belongs to the play grammar below, not here.
   if (isControlFlag) {
@@ -184,34 +183,9 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
 
   if (intent.note) console.log(formatCliStatus('warning', intent.note));
 
-  // Every direct play runs mpv attached to this terminal — the tswift model.
-  // mpv owns its own bar (--term-osd-bar) and reads space/arrow keys straight
-  // off stdin itself; nothing here reimplements either. The first (or only)
-  // file is downloaded ahead of time (see the resolver) so mpv is never
-  // asked to resolve a raw YouTube URL itself — that's what caused header
-  // mismatches and pipe-format-detection failures in the first place.
-  if (intent.kind === 'song') {
-    await playSongForeground({
-      resolver,
-      platform,
-      videoId: intent.videoId,
-      title: intent.title,
-      loop: intent.modifiers?.loop,
-      onReady: (localFile) => console.log(`Playing: ${localFile}`),
-    });
-  } else if (intent.kind === 'playlist') {
-    await playPlaylistForeground({
-      resolver,
-      platform,
-      playlistRepo,
-      playlistName: intent.playlistName,
-      loop: intent.modifiers?.loop,
-      concurrency: settingsRepo.all().concurrentDownloads,
-      onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-      onEmpty: () => console.log(formatCliStatus('warning', `Playlist "${intent.playlistName}" has no songs yet — add some songs to it first.`)),
-      onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
-    });
-  } else if (intent.kind === 'search') {
+  if (intent.kind === 'song' || intent.kind === 'playlist') return launchApp(intent);
+
+  if (intent.kind === 'search') {
     const { pickFromSearch } = await import('../dist/ui.js');
     const picked = await pickFromSearch({
       query: intent.query,
@@ -223,14 +197,7 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
       tokenRegistry,
     });
     if (picked) {
-      await playSongForeground({
-        resolver,
-        platform,
-        videoId: picked.videoId,
-        title: picked.title,
-        loop: intent.modifiers?.loop,
-        onReady: (localFile) => console.log(`Playing: ${localFile}`),
-      });
+      return launchApp({ kind: 'song', videoId: picked.videoId, title: picked.title, modifiers: { loop: intent.modifiers?.loop } });
     }
   }
 

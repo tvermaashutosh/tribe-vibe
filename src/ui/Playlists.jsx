@@ -6,10 +6,6 @@ import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
-import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
-import { formatPlaylistSongList } from '../player/playlistSongList.js';
-import { formatCliStatus } from './statusLevel.js';
-import { handOffToForeground } from './handOffToForeground.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
 import { buildPlaylistListItems } from './playlistListItems.js';
@@ -18,7 +14,7 @@ import { theme } from './theme.js';
 // One screen for everything playlist-related: the list of existing playlists
 // (add/remove/reorder/replace songs, rename, delete), plus creating a brand
 // new one. A playlist's name IS its invocable token — no separate alias list.
-export default function Playlists({ ctx, onBack }) {
+export default function Playlists({ ctx, onBack, onPlayIntent }) {
   const [mode, setMode] = useState('list');
   const [selected, setSelected] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
@@ -143,17 +139,7 @@ export default function Playlists({ ctx, onBack }) {
                 setError(`Playlist "${selectedPlaylist.name}" has no songs yet — add some songs to it first.`);
                 return;
               }
-              return handOffToForeground(ctx, () =>
-                playPlaylistForeground({
-                  resolver: ctx.resolver,
-                  platform: ctx.platform,
-                  playlistRepo: ctx.playlistRepo,
-                  playlistName: selectedPlaylist.name,
-                  concurrency: ctx.settings.concurrentDownloads,
-                  onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-                  onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
-                }),
-              );
+              return onPlayIntent({ kind: 'playlist', playlistName: selectedPlaylist.name });
             }
             if (item.value === '__addSong__') {
               setPendingAction('add');
@@ -291,15 +277,7 @@ export default function Playlists({ ctx, onBack }) {
           setError(null);
           if (item.value === 'play') {
             const song = selectedPlaylist.songs[editIndex];
-            return handOffToForeground(ctx, () =>
-              playSongForeground({
-                resolver: ctx.resolver,
-                platform: ctx.platform,
-                videoId: song.videoId,
-                title: song.title,
-                onReady: (localFile) => console.log(`Playing: ${localFile}`),
-              }),
-            );
+            return onPlayIntent({ kind: 'song', videoId: song.videoId, title: song.title });
           }
           if (item.value === 'remove') {
             ctx.playlistRepo.removeSong(selected, editIndex);

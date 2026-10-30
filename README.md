@@ -45,7 +45,7 @@ tv -q "literal search"    # bypass alias matching entirely — anywhere on the l
 
 Nothing is reserved except your own alias/playlist names — `-l`/`-loop` and `-q`/`-query` are real flags, not blocked words, so a song actually titled "loop" still types as itself. Volume is mpv's own; tribe-vibe doesn't set or remember it.
 
-Every play — typed or from the menu's `Play` screen — runs mpv attached to your terminal with its native progress bar and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). Each song's real title is printed as it starts, not just its cache file path. The terminal stays occupied until playback ends.
+Every play — typed or chosen from the menu — opens the `Now Playing` screen, then runs MPV attached to the terminal with its native logs, progress bar, and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). The screen title stays above MPV's output while playback runs.
 
 **Hotkeys** — meant to be bound to keys, not typed:
 
@@ -64,7 +64,7 @@ These control a background player, separate from a directly typed `tv <song>` �
 
 **`tv -kill`** — stops every mpv process on the machine, tribe-vibe's own or not: the background daemon, any foreground play, including one left orphaned (some terminal media players, mpv included, deliberately ignore SIGHUP so closing the window doesn't kill playback — that can leave a foreground `-loop`ing play running indefinitely with no controlling terminal and no way back in), and any other mpv session entirely unrelated to tribe-vibe that happens to be running. Unlike the hotkey flags above, this never touches the daemon/IPC connection itself, so it works even when that's the thing broken.
 
-**Menu** (`tv`, no args) — `Play`, `Songs`, `Playlists`, `Artists`, `Settings`. Songs and Artists are separate screens even though they're both just aliases under the hood (same `aliases.json`, same repository) — picking one apart from the other keeps each screen free of type-branching, and matches the real difference between them: a song or playlist alias plays in one click, an artist alias always opens an ambiguous search. Every alias is picked from search results and pinned by its actual video ID, so it never drifts if search rankings change later. Playlist names share the same namespace as aliases — no separate list to remember. The `Play` screen's own browse list only ever shows songs and playlists (never artists, since neither of those is a one-click play), grouped song → playlist, most-recently-touched first.
+**Menu** (`tv`, no args) — `Play`, `Songs`, `Playlists`, `Artists`, `Settings`. Playing a song or playlist opens the `Now Playing` screen automatically; it is not a menu option. Songs and Artists are separate screens even though they're both just aliases under the hood (same `aliases.json`, same repository) — picking one apart from the other keeps each screen free of type-branching, and matches the real difference between them: a song or playlist alias plays in one click, an artist alias always opens an ambiguous search. Every alias is picked from search results and pinned by its actual video ID, so it never drifts if search rankings change later. Playlist names share the same namespace as aliases — no separate list to remember. The `Play` screen's own browse list only ever shows songs and playlists (never artists, since neither of those is a one-click play), grouped song → playlist, most-recently-touched first.
 
 **Settings**:
 

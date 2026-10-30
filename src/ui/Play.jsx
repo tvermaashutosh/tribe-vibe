@@ -4,23 +4,15 @@ import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
-import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
-import { formatPlaylistSongList } from '../player/playlistSongList.js';
 import { buildBrowseItems } from './browseItems.js';
 import { theme } from './theme.js';
-import { formatCliStatus } from './statusLevel.js';
-import { handOffToForeground } from './handOffToForeground.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
 // a terminal or right here. A confirmed play (deterministic intent, or a
-// Picker pick) hands off exactly like the typed CLI does: tear down the Ink
-// app and run a real foreground mpv, attached to the terminal, tswift-style
-// — not a reimplemented bar/hotkey view. Ink and mpv can't both own raw-mode
-// stdin at once, so the whole menu exits; that also means "Play" from the
-// menu and typing `tv <song>` in a shell now behave identically end to end,
-// down to handing your terminal back once playback actually finishes.
-export default function Play({ ctx, onBack }) {
+// Picker pick) opens the Now Playing screen and hands the terminal to MPV for
+// its native logs, progress bar, and keyboard controls.
+export default function Play({ ctx, onBack, onPlayIntent }) {
   // Computed before query below, not after — its very first item is already
   // shown highlighted (❯) the moment this screen opens, so the search box
   // should already match it too, not just once you actually press an arrow.
@@ -39,7 +31,6 @@ export default function Play({ ctx, onBack }) {
   // is already torn down) — so it's always a warning. Cleared at the start
   // of every submit so a stale one never lingers onto whatever comes next.
   const [status, setStatus] = useState(null);
-  const [busy, setBusy] = useState(false);
   const [picking, setPicking] = useState(false);
   const [browseIndex, setBrowseIndex] = useState(0);
   // Bumped every time browsing overwrites query below — forces TextInput to
@@ -60,17 +51,7 @@ export default function Play({ ctx, onBack }) {
     if (intent.note) setStatus(intent.note);
 
     if (intent.kind === 'song') {
-      setBusy(true);
-      handOffToForeground(ctx, () =>
-        playSongForeground({
-          resolver: ctx.resolver,
-          platform: ctx.platform,
-          videoId: intent.videoId,
-          title: intent.title,
-          loop: intent.modifiers?.loop,
-          onReady: (localFile) => console.log(`Playing: ${localFile}`),
-        }),
-      );
+      onPlayIntent(intent);
       return;
     }
 
@@ -84,19 +65,7 @@ export default function Play({ ctx, onBack }) {
         setStatus(`Playlist "${intent.playlistName}" has no songs yet — add some songs to it first.`);
         return;
       }
-      setBusy(true);
-      handOffToForeground(ctx, () =>
-        playPlaylistForeground({
-          resolver: ctx.resolver,
-          platform: ctx.platform,
-          playlistRepo: ctx.playlistRepo,
-          playlistName: intent.playlistName,
-          loop: intent.modifiers?.loop,
-          concurrency: ctx.settings.concurrentDownloads,
-          onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist)),
-          onSongFailed: (song, err) => console.log(formatCliStatus('warning', `Skipping "${song.title}" — ${err.message}`)),
-        }),
-      );
+      onPlayIntent(intent);
       return;
     }
 
@@ -109,7 +78,7 @@ export default function Play({ ctx, onBack }) {
     (input, key) => {
       if (key.escape) return onBack();
     },
-    { isActive: !busy && !picking },
+    { isActive: !picking },
   );
 
   // ink-text-input's own useInput explicitly ignores up/down arrows (it only
@@ -135,17 +104,8 @@ export default function Play({ ctx, onBack }) {
       setQuery(browseItems[nextIndex].token);
       setFillNonce((n) => n + 1);
     },
-    { isActive: !busy && !picking && browseItems.length > 0 },
+    { isActive: !picking && browseItems.length > 0 },
   );
-
-  if (busy) {
-    return (
-      <Box flexDirection="column">
-        <Text bold color={theme.secondary}>Play</Text>
-        {status && <Text color={theme.dim}>{status}</Text>}
-      </Box>
-    );
-  }
 
   if (!picking) {
     return (
@@ -190,17 +150,7 @@ export default function Play({ ctx, onBack }) {
       resolver={ctx.resolver}
       player={ctx.player}
       onConfirm={(candidate) => {
-        setBusy(true);
-        handOffToForeground(ctx, () =>
-          playSongForeground({
-            resolver: ctx.resolver,
-            platform: ctx.platform,
-            videoId: candidate.videoId,
-            title: candidate.title,
-            loop: searchLoop,
-            onReady: (localFile) => console.log(`Playing: ${localFile}`),
-          }),
-        );
+        onPlayIntent({ kind: 'song', videoId: candidate.videoId, title: candidate.title, modifiers: { loop: searchLoop } });
       }}
       onCancel={() => {
         setStatus(null);

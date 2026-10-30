@@ -29,6 +29,7 @@ test('foreground handoff keeps the cache lease until playback finishes', async (
     finishPlayback = resolve;
   });
   let exitCode;
+  let unmounted = false;
   const restoreTrace = disableTrace();
   const originalExit = process.exit;
   process.exit = (code) => {
@@ -41,10 +42,14 @@ test('foreground handoff keeps the cache lease until playback finishes', async (
       sessionLock,
       unmountMenu() {
         assert.equal(sessionLock.transferred, true, 'the lease must transfer before Ink unmounts');
+        unmounted = true;
       },
       closeDaemon() {},
     },
-    () => playback,
+    () => {
+      assert.equal(unmounted, true, 'MPV starts after Ink has unmounted');
+      return playback;
+    },
   );
 
   try {
@@ -68,6 +73,7 @@ test('foreground handoff releases its lease when playback fails', async () => {
   const sessionLock = acquireSessionLock(platform);
   assert.ok(sessionLock);
   let exitCode;
+  const stdoutWrites = [];
   const restoreTrace = disableTrace();
   const originalExit = process.exit;
   const originalError = console.error;

@@ -6,8 +6,6 @@ import Picker from './Picker.jsx';
 import SkipList from './SkipList.jsx';
 import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
-import { playSongForeground } from '../player/directPlay.js';
-import { handOffToForeground } from './handOffToForeground.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { buildAliasListItems } from './aliasListItems.js';
 import { theme } from './theme.js';
@@ -23,7 +21,7 @@ const SCREEN_LABEL = { song: 'Songs', artist: 'Artists' };
 // ambiguous search, not a one-click play). Splitting the underlying storage
 // was never on the table — same AliasRepository, same aliases.json, just
 // two focused views onto it instead of one screen mixing both together.
-export default function AliasScreen({ ctx, type, onBack }) {
+export default function AliasScreen({ ctx, type, onBack, onPlayIntent }) {
   const [mode, setMode] = useState('list');
   const [selectedToken, setSelectedToken] = useState(null);
   const [nameInput, setNameInput] = useState('');
@@ -101,15 +99,7 @@ export default function AliasScreen({ ctx, type, onBack }) {
           onSelect={(item) => {
             setError(null);
             if (item.value === 'play') {
-              return handOffToForeground(ctx, () =>
-                playSongForeground({
-                  resolver: ctx.resolver,
-                  platform: ctx.platform,
-                  videoId: selectedEntry.videoId,
-                  title: selectedEntry.title,
-                  onReady: (localFile) => console.log(`Playing: ${localFile}`),
-                }),
-              );
+              return onPlayIntent({ kind: 'song', videoId: selectedEntry.videoId, title: selectedEntry.title });
             }
             if (item.value === 'delete') {
               ctx.aliasRepo.removeAlias(selectedEntry.token);
