@@ -34,18 +34,11 @@ When `npm run setup` is run from Fish, it also installs a Fish integration that 
 
 ## Usage
 
-**Play by typing** — order never matters, matching is case-insensitive:
+**Play through the app** — run `tv`, open `Play`, then enter a song alias, playlist name, or search query. The Play screen accepts the same order-independent modifiers, including `-l`/`-loop` and `-q`/`-query`.
 
-```
-tv tsw tt -loop=10        # any order works, and so does -loop=10 tsw tt
-tv focus                  # play a playlist by name
-tv some vague lyrics      # no alias match -> opens a picker to disambiguate
-tv -q "literal search"    # bypass alias matching entirely — anywhere on the line, same as -loop
-```
+Nothing is reserved except your own alias/playlist names — a song actually titled "loop" still works when entered in the Play screen. Volume is MPV's own; tribe-vibe doesn't set or remember it.
 
-Nothing is reserved except your own alias/playlist names — `-l`/`-loop` and `-q`/`-query` are real flags, not blocked words, so a song actually titled "loop" still types as itself. Volume is mpv's own; tribe-vibe doesn't set or remember it.
-
-Every play — typed or chosen from the menu — opens the `Now Playing` screen, then runs MPV attached to the terminal with its native logs, progress bar, and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). The screen title stays above MPV's output while playback runs.
+Every play started from the Play screen opens the `Now Playing` screen, then runs MPV attached to the terminal with its native logs, progress bar, and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). The screen title stays above MPV's output while playback runs.
 
 **Hotkeys** — meant to be bound to keys, not typed:
 
@@ -60,7 +53,7 @@ cmd + alt - p : tv -pause
 cmd + alt - n : tv -next
 ```
 
-These control a background player, separate from a directly typed `tv <song>` — they have nothing to act on while a direct play is running.
+These control the background player. They have nothing to act on while a foreground play started from the app is running.
 
 **`tv -kill`** — stops every mpv process on the machine, tribe-vibe's own or not: the background daemon, any foreground play, including one left orphaned (some terminal media players, mpv included, deliberately ignore SIGHUP so closing the window doesn't kill playback — that can leave a foreground `-loop`ing play running indefinitely with no controlling terminal and no way back in), and any other mpv session entirely unrelated to tribe-vibe that happens to be running. Unlike the hotkey flags above, this never touches the daemon/IPC connection itself, so it works even when that's the thing broken.
 
@@ -77,7 +70,7 @@ These control a background player, separate from a directly typed `tv <song>` �
 
 ## Data
 
-Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something within the same session doesn't re-download it — the cache directory itself is wiped clean when a play session starts (the interactive menu, or a direct typed play), so it never accumulates across sessions. A hotkey command (`tv -pause` and friends) never triggers this, since it never downloads anything itself; and if another tv process is already mid-session, a second one simply skips the wipe rather than risk deleting files the first one is still using. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
+Aliases, playlists, and settings live as plain JSON under your OS config directory. Downloaded audio is cached under your OS cache directory, keyed by video ID, so replaying something within the same session doesn't re-download it — the cache directory itself is wiped clean when a play session starts, so it never accumulates across sessions. A hotkey command (`tv -pause` and friends) never triggers this, since it never downloads anything itself; and if another tv process is already mid-session, a second one simply skips the wipe rather than risk deleting files the first one is still using. Nothing is streamed directly from a raw YouTube URL — every song, including every song in a playlist, is downloaded before playback starts.
 
 ## Known limitations
 

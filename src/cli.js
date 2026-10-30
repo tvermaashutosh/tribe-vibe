@@ -11,7 +11,7 @@ import { Player } from './player/player.js';
 import { formatCliStatus } from './ui/statusLevel.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
-import { resolveTypedInput } from './pipeline/index.js';
+// import { resolveTypedInput } from './pipeline/index.js';
 import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
 import { killAllMpv } from './player/killAllMpv.js';
 import { trace, truncateTraceLogForNewSession } from './debugTrace.js';
@@ -170,36 +170,39 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
     return closeAndExit();
   }
 
-  // resolveTypedInput is the one place -q/-query (bypass the classifier
-  // entirely for a literal search string) and normal alias resolution both
-  // live — the same function the Ink Play screen and playlist add/replace
-  // song use, so "-q" behaves identically no matter where it's typed.
-  const intent = resolveTypedInput(args.join(' '), { aliasRepo, playlistRepo });
+  // All non-control invocations now open the app. Songs and playlists can
+  // only be started from its Play tab.
+  trace('cli.js: launching app; direct typed playback is retired');
+  return launchApp();
 
-  if (intent.kind === 'empty') {
-    console.log(formatCliStatus('warning', 'Nothing to play — try a song, playlist, or artist alias.'));
-    return closeAndExit();
-  }
-
-  if (intent.note) console.log(formatCliStatus('warning', intent.note));
-
-  if (intent.kind === 'song' || intent.kind === 'playlist') return launchApp(intent);
-
-  if (intent.kind === 'search') {
-    const { pickFromSearch } = await import('../dist/ui.js');
-    const picked = await pickFromSearch({
-      query: intent.query,
-      top: settingsRepo.all().top,
-      resolver,
-      player,
-      aliasRepo,
-      playlistRepo,
-      tokenRegistry,
-    });
-    if (picked) {
-      return launchApp({ kind: 'song', videoId: picked.videoId, title: picked.title, modifiers: { loop: intent.modifiers?.loop } });
-    }
-  }
-
-  return closeAndExit();
+  // Retired direct-command playback implementation. Kept here for reference;
+  // the Play tab uses resolveTypedInput from the same pipeline inside the app.
+  // const intent = resolveTypedInput(args.join(' '), { aliasRepo, playlistRepo });
+  //
+  // if (intent.kind === 'empty') {
+  //   console.log(formatCliStatus('warning', 'Nothing to play — try a song, playlist, or artist alias.'));
+  //   return closeAndExit();
+  // }
+  //
+  // if (intent.note) console.log(formatCliStatus('warning', intent.note));
+  //
+  // if (intent.kind === 'song' || intent.kind === 'playlist') return launchApp(intent);
+  //
+  // if (intent.kind === 'search') {
+  //   const { pickFromSearch } = await import('../dist/ui.js');
+  //   const picked = await pickFromSearch({
+  //     query: intent.query,
+  //     top: settingsRepo.all().top,
+  //     resolver,
+  //     player,
+  //     aliasRepo,
+  //     playlistRepo,
+  //     tokenRegistry,
+  //   });
+  //   if (picked) {
+  //     return launchApp({ kind: 'song', videoId: picked.videoId, title: picked.title, modifiers: { loop: intent.modifiers?.loop } });
+  //   }
+  // }
+  //
+  // return closeAndExit();
 }
