@@ -86,7 +86,7 @@ Aliases, playlists, and settings live as plain JSON under your OS config directo
 
 ## Debugging
 
-Every run traces the full lifecycle of a play (download → foreground mpv → terminal restore → exit) and the background daemon's own IPC to a log file under your OS temp directory (`tribe-vibe-debug.log`) — exactly the chain that's hardest to reason about after the fact, since mpv and Ink both take over stdio/raw-mode at different points, leaving nothing in a normal terminal to look back at once something goes wrong. On by default; set `TRIBE_VIBE_TRACE=0` to opt out.
+Every run traces the full lifecycle of a play (download → foreground MPV → terminal restore → exit) and the background daemon's own IPC to a log file under your OS temp directory (`tribe-vibe-debug.log`). On by default; set `TRIBE_VIBE_TRACE=0` to opt out.
 
 ## Testing
 
