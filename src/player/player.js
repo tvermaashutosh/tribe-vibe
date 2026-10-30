@@ -2,7 +2,7 @@
 // interface. Nothing upstream (Command handlers, Ink UI) talks to mpv's IPC
 // commands directly — only this file does, so mpv could be swapped later
 // without touching any caller. This is only ever the background daemon —
-// confirmed plays run through a separate foreground mpv instead (see
+// confirmed plays use a separate foreground mpv instead (see
 // player/playForeground.js) and never touch this class at all.
 export class Player {
   constructor(ipcClient) {
@@ -19,7 +19,7 @@ export class Player {
   }
 
   setLoop(loop) {
-    const value = loop === true ? 'inf' : String(loop);
+    const value = loop === true ? 'inf' : (loop ? String(loop) : 'no');
     return this.ipc.send(['set_property', 'loop-file', value]);
   }
 
