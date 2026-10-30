@@ -109,10 +109,10 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
 
   if (mode === 'detail') {
     const items = [
-      // A playlist is fully deterministic — playing it needs no picker, no
-      // ambiguous search, nothing — so it's the very first option here,
-      // exactly like Play view's own browse list would play it.
-      { label: '▶ Play', value: '__play__' },
+      // Keep Play first and reachable, but default to the first song when
+      // there is one so selecting a playlist makes its contents immediately
+      // browsable. Empty playlists still land on Play.
+      { label: '▶ Play', value: '__play__', skipDefault: selectedPlaylist.songs.length > 0 },
       ...(selectedPlaylist.songs.length > 0 ? [{ ...DIVIDER_ITEM, value: '__divider__play-songs' }] : []),
       ...selectedPlaylist.songs.map((song, i) => ({
         label: `${i + 1}. ${song.title}`,
@@ -127,6 +127,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
       <Box flexDirection="column">
         <Text bold color={theme.secondary}>{selectedPlaylist.name}</Text>
         <SkipList
+          key={`playlist-detail-${selectedPlaylist.name}`}
           items={items}
           onHighlight={() => setError(null)}
           onSelect={(item) => {
