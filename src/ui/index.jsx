@@ -16,15 +16,13 @@ export function launchMenu(ctx) {
   return waitUntilExit();
 }
 
-// Wrapped in the exact same padding={1} Box App.jsx uses — a typed search
-// (`tv some vague lyrics`) hands off straight to this Picker with no
-// MainMenu/App in between, but it's still Ink, and it should look like it:
-// same one-line breathing room above and below, not just whichever entry
-// point happened to reach it.
+// A typed search (`tv some vague lyrics`) hands off straight to this Picker
+// with no MainMenu/App in between, so keep its horizontal margins consistent
+// with the main app without adding a blank row above the view.
 export function pickFromSearch({ query, top, resolver, player, aliasRepo, playlistRepo, tokenRegistry }) {
   return new Promise((resolve) => {
     const { unmount } = render(
-      <Box flexDirection="column" padding={1}>
+      <Box flexDirection="column" paddingX={1}>
         <Picker
           initialQuery={query}
           top={top}
