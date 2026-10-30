@@ -197,12 +197,13 @@ export default function Picker({
       {results.map((result, i) => {
         const prefix = i === index ? '❯ ' : '  ';
         const row = resultRows[i];
+        const rowColor = i === index ? theme.selected : undefined;
         return (
-          <Text key={result.videoId} color={i === index ? theme.selected : undefined}>
-            {prefix}
-            {row.title}{row.duration && '  '}
-            {row.duration}
-          </Text>
+          <Box key={result.videoId} flexDirection="row" flexWrap="nowrap">
+            <Box width={2} flexShrink={0}><Text color={rowColor}>{prefix}</Text></Box>
+            <Box width={row.titleColumnWidth} flexShrink={0}><Text color={rowColor}>{row.title}</Text></Box>
+            {row.duration && <Text color={rowColor}>{row.duration}</Text>}
+          </Box>
         );
       })}
       {results.length > 0 && <Text color={theme.dim}>({hints.join(' · ')})</Text>}
