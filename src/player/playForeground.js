@@ -50,13 +50,9 @@ function guardVulnerableWindow(platform) {
 // --{ / --} per-file markers are the real fix (verified live: without them,
 // the last --force-media-title on the line wins for the whole playlist).
 export function playForeground({ files, loop, platform }) {
-  // The ${media-title} substitution is colored cyan (matching
-  // theme.secondary), leaving the "Playing: " prefix plain — mpv just
-  // echoes this template verbatim to the terminal, so embedding a raw ANSI
-  // code in a param we already fully own doesn't touch mpv's own behavior
-  // at all (verified live: mpv passes it straight through, no shell/quoting
-  // involved since this is a literal argv element, not a shell string).
-  const args = ['--no-video', '--term-osd-bar', '--term-playing-msg=Playing: \x1b[36m${media-title}\x1b[39m'];
+  // Let MPV use its normal terminal color for the title instead of forcing
+  // an ANSI color in the playing message.
+  const args = ['--no-video', '--term-osd-bar', '--term-playing-msg=Playing: ${media-title}'];
   // --loop-playlist, not --loop (an alias for --loop-file) — the latter
   // reloads/seeks just the current file forever and never advances past it,
   // so a multi-song playlist looped with it only ever replayed song 1.

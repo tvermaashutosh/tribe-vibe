@@ -7,9 +7,8 @@ export const theme = {
   // drifting to theme.accent's magenta, which is reserved for headings/branding.
   selected: 'blue',
   // The second-most-prominent text in a screen: each screen's own subheading
-  // (right below the "tribe-vibe" accent heading) and the song title in the
-  // pre-mpv "Playing:" line. A light-blue/cyan complements accent's
-  // magenta without being confusable with selected's blue.
+  // (right below the "tribe-vibe" accent heading). A light-blue/cyan
+  // complements accent's magenta without being confusable with selected's blue.
   secondary: 'cyan',
   dim: 'gray',
   error: 'red',
