@@ -1,4 +1,8 @@
 import { spawn } from 'node:child_process';
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getPlatform } from '../src/platform/index.js';
 import { runDiagnostics } from '../src/diagnostics/runDiagnostics.js';
 import { formatCliStatus } from '../src/ui/statusLevel.js';
@@ -18,6 +22,42 @@ function runStep(command, args) {
 function runInstallCommand(fullCommand) {
   const [command, ...args] = fullCommand.split(' ');
   return runStep(command, args);
+}
+
+async function installFishHistoryIntegration() {
+  if (!/(^|\/)fish$/.test(process.env.SHELL ?? '')) return;
+
+  const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+  const fishConfigDir = path.join(configHome, 'fish', 'conf.d');
+  const sourceFile = fileURLToPath(new URL('../shell/fish/conf.d/tribe-vibe.fish', import.meta.url));
+  const destinationFile = path.join(fishConfigDir, 'tribe-vibe-history.fish');
+
+  await mkdir(fishConfigDir, { recursive: true });
+  try {
+    const [source, existing] = await Promise.all([readFile(sourceFile), readFile(destinationFile)]);
+    if (source.equals(existing)) {
+      console.log(formatCliStatus('success', `Fish history integration is current at ${destinationFile}`));
+      console.log('Start a new Fish session, or run: source ' + destinationFile);
+      return;
+    }
+
+    // This path is owned by tribe-vibe. Upgrade versions previously installed
+    // by this setup script, but preserve an unrelated file with the same name.
+    const existingText = existing.toString();
+    if (!existingText.includes('# tribe-vibe history integration (managed by tribe-vibe)')
+      && !existingText.includes('function __tribe_vibe_remove_history')
+      && !existingText.includes('function __tribe_vibe_clear_history')) {
+      console.log(formatCliStatus('warning', `Fish history integration already exists at ${destinationFile}; leaving it unchanged.`));
+      return;
+    }
+    await copyFile(sourceFile, destinationFile);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    await copyFile(sourceFile, destinationFile);
+  }
+
+  console.log(formatCliStatus('success', `Installed Fish history integration at ${destinationFile}`));
+  console.log('Start a new Fish session, or run: source ' + destinationFile);
 }
 
 async function main() {
@@ -43,6 +83,8 @@ async function main() {
   } catch (err) {
     console.log(formatCliStatus('warning', `npm link failed (${err.message}) — you may need elevated permissions, or run it yourself.`));
   }
+
+  await installFishHistoryIntegration();
 
   console.log('\nChecking mpv, yt-dlp, and the hotkey daemon...\n');
   const results = await runDiagnostics(platform);

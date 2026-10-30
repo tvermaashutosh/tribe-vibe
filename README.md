@@ -30,6 +30,8 @@ npm run build
 npm link
 ```
 
+When `npm run setup` is run from Fish, it also installs a Fish integration that removes old `tv` and `tribe-vibe` commands at startup and removes each new launch before it can be saved to history. Start a new Fish session after setup (or source the installed `tribe-vibe-history.fish` file printed by setup) to enable it. This affects Fish command history and its suggestions; other shells need their own shell integration.
+
 ## Usage
 
 **Play by typing** — order never matters, matching is case-insensitive:
