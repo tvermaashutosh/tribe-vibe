@@ -158,7 +158,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
             return setMode('songMenu');
           }}
         />
-        <Text color={theme.dim}>(select a song to reorder, replace, or remove it)</Text>
+        {ctx.settings.showHelpMessages && <Text color={theme.dim}>(select a song to reorder, replace, or remove it)</Text>}
         <StatusText message={error} />
       </Box>
     );
@@ -196,7 +196,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
     return (
       <Box flexDirection="column">
         <Text bold color={theme.secondary}>{pendingAction === 'add' ? 'Add song' : 'Replace song'}</Text>
-        <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>
+        {ctx.settings.showHelpMessages && <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>}
         <TextInput
           value={songQuery}
           onChange={(value) => {
@@ -243,6 +243,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
     return (
       <Picker
         initialQuery={pickerQuery}
+        showHelpMessages={ctx.settings.showHelpMessages}
         top={ctx.settings.top}
         resolver={ctx.resolver}
         player={ctx.player}
@@ -303,6 +304,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
     return (
       <Picker
         initialQuery={pickerQuery}
+        showHelpMessages={ctx.settings.showHelpMessages}
         top={ctx.settings.top}
         resolver={ctx.resolver}
         player={ctx.player}

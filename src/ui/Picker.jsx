@@ -23,6 +23,7 @@ export default function Picker({
   onSaveAlias,
   onAddToPlaylist,
   playlists = [],
+  showHelpMessages = false,
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [phase, setPhase] = useState(initialQuery ? 'searching' : 'typing');
@@ -149,7 +150,7 @@ export default function Picker({
             setPhase('listing');
           }}
         />
-        <Text color={theme.dim}>(esc to cancel)</Text>
+        {showHelpMessages && <Text color={theme.dim}>(esc to cancel)</Text>}
       </Box>
     );
   }
@@ -163,7 +164,7 @@ export default function Picker({
     return (
       <Box flexDirection="column">
         <Text>Add "{pendingCandidate.title}" to which playlist?</Text>
-        {playlists.length === 0 && <Text color={theme.dim}>No playlists yet — create one from New Playlist.</Text>}
+        {showHelpMessages && playlists.length === 0 && <Text color={theme.dim}>No playlists yet — create one from New Playlist.</Text>}
         <SkipList
           items={items}
           onSelect={async (item) => {
@@ -206,7 +207,7 @@ export default function Picker({
           </Box>
         );
       })}
-      {results.length > 0 && <Text color={theme.dim}>({hints.join(' · ')})</Text>}
+      {showHelpMessages && results.length > 0 && <Text color={theme.dim}>({hints.join(' · ')})</Text>}
       <StatusText message={status} level={statusLevel} />
     </Box>
   );

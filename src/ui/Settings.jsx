@@ -24,6 +24,7 @@ export default function Settings({ ctx, onBack }) {
   // previously always rendered green even on failure; now tracked properly.
   const [statusLevel, setStatusLevel] = useState('success');
   const [diagnostics, setDiagnostics] = useState(null);
+  const [, setSettingsRevision] = useState(0);
 
   const showStatus = (message, level = 'success') => {
     setStatus(message);
@@ -43,6 +44,7 @@ export default function Settings({ ctx, onBack }) {
     { label: '⇩ Export data', value: '__export__' },
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
     { label: `⇊ Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
+    { label: `ⓘ Help messages: ${ctx.settings.showHelpMessages ? 'On' : 'Off'}`, value: '__toggleHelp__' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
   ];
@@ -130,7 +132,7 @@ export default function Settings({ ctx, onBack }) {
             <Text color={STATUS_COLOR[check.status]}>
               {STATUS_ICON[check.status]} {check.name}: {check.message}
             </Text>
-            {check.fix && <Text color={theme.dim}> → {check.fix}</Text>}
+            {ctx.settings.showHelpMessages && check.fix && <Text color={theme.dim}> → {check.fix}</Text>}
           </Box>
         ))}
       </Box>
@@ -176,6 +178,11 @@ export default function Settings({ ctx, onBack }) {
             } catch (err) {
               showStatus(`Could not save About PDF: ${err.message}`, 'error');
             }
+            return undefined;
+          }
+          if (item.value === '__toggleHelp__') {
+            ctx.saveSettings({ ...ctx.settings, showHelpMessages: !ctx.settings.showHelpMessages });
+            setSettingsRevision((revision) => revision + 1);
             return undefined;
           }
           setEditing(item.value);

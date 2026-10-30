@@ -111,7 +111,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
     return (
       <Box flexDirection="column">
         <Text bold color={theme.secondary}>Play</Text>
-        <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>
+        {ctx.settings.showHelpMessages && <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>}
         <TextInput
           key={fillNonce}
           value={query}
@@ -126,7 +126,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
         />
         <Text color={theme.dim}>{'─'.repeat(30)}</Text>
         {browseItems.length === 0 ? (
-          <Text color={theme.dim}>No aliases or playlists yet.</Text>
+          ctx.settings.showHelpMessages ? <Text color={theme.dim}>No aliases or playlists yet.</Text> : null
         ) : (
           <Box flexDirection="column">
             {browseItems.map((item, i) => (
@@ -135,7 +135,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
                 {item.columns[0]}  {item.columns[1]}  {item.columns[2]}  {item.columns[3]}
               </Text>
             ))}
-            <Text color={theme.dim}>(↑/↓ browse — fills the box, edit freely, enter to play or search)</Text>
+            {ctx.settings.showHelpMessages && <Text color={theme.dim}>(↑/↓ browse — fills the box, edit freely, enter to play or search)</Text>}
           </Box>
         )}
         <StatusText message={status} />
@@ -145,6 +145,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
 
   return (
     <Picker
+      showHelpMessages={ctx.settings.showHelpMessages}
       initialQuery={searchQuery}
       top={ctx.settings.top}
       resolver={ctx.resolver}

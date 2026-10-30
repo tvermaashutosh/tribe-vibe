@@ -142,6 +142,7 @@ export default function AliasScreen({ ctx, type, onBack, onPlayIntent }) {
   if (mode === 'replace') {
     return (
       <Picker
+        showHelpMessages={ctx.settings.showHelpMessages}
         top={ctx.settings.top}
         resolver={ctx.resolver}
         player={ctx.player}
@@ -205,7 +206,7 @@ export default function AliasScreen({ ctx, type, onBack, onPlayIntent }) {
     return (
       <Box flexDirection="column">
         <Text>Search for a song to alias:</Text>
-        <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>
+        {ctx.settings.showHelpMessages && <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>}
         <TextInput
           value={songQuery}
           onChange={(value) => {
@@ -245,6 +246,7 @@ export default function AliasScreen({ ctx, type, onBack, onPlayIntent }) {
   if (mode === 'songSearch') {
     return (
       <Picker
+        showHelpMessages={ctx.settings.showHelpMessages}
         initialQuery={pickerQuery}
         top={ctx.settings.top}
         resolver={ctx.resolver}
