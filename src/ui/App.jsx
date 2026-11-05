@@ -27,7 +27,7 @@ export default function App({ ctx }) {
         title: intent.title,
         loop: intent.modifiers?.loop,
         privateMode: ctx.settings.privateMode,
-        onReady: (localFile) => console.log(`Playing: ${localFile}`),
+        onReady: (localFile) => console.log(localFile),
       });
       return;
     }
