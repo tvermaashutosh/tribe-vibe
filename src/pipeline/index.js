@@ -22,7 +22,14 @@ export function resolveIntent(rawArgs, { aliasRepo, playlistRepo }) {
     return { kind: 'search', deterministic: false, query, modifiers: { loop } };
   }
 
-  const classified = classifyTokens(remaining, { aliasRepo, playlistRepo });
+  // Playlist tokens are deterministic targets only when they are the entire
+  // target. Inside a longer phrase they are ordinary search words, otherwise
+  // a playlist named "fire" hijacks searches such as "playing with fire song".
+  const classified = classifyTokens(remaining, {
+    aliasRepo,
+    playlistRepo,
+    matchPlaylistTokens: remaining.length === 1,
+  });
   return buildIntent({ ...classified, modifiers: { loop } });
 }
 

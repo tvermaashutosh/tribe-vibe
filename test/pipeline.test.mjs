@@ -85,6 +85,36 @@ test('playlist alias is deterministic and takes priority', () => {
   assert.equal(intent.playlistName, 'focus');
 });
 
+test('a playlist token inside a longer phrase stays part of the search query', () => {
+  const aliasRepo = fakeAliasRepo([]);
+  const playlistRepo = fakePlaylistRepo([{ name: 'fire' }]);
+  const intent = resolveTypedInput('playing with fire song', { aliasRepo, playlistRepo });
+
+  assert.equal(intent.kind, 'search');
+  assert.equal(intent.query, 'playing with fire song');
+});
+
+test('a song alias inside a longer phrase stays in the search query instead of playing the alias', () => {
+  const aliasRepo = fakeAliasRepo([
+    { token: 'aots', type: 'song', videoId: 'abc123', title: 'All Of The Stars' },
+  ]);
+  const playlistRepo = fakePlaylistRepo();
+  const intent = resolveTypedInput('aots special boom', { aliasRepo, playlistRepo });
+
+  assert.equal(intent.kind, 'search');
+  assert.equal(intent.query, 'aots special boom');
+});
+
+test('playlist alias remains a deterministic target when it is the entire input, with modifiers', () => {
+  const aliasRepo = fakeAliasRepo([]);
+  const playlistRepo = fakePlaylistRepo([{ name: 'fire' }]);
+  const intent = resolveTypedInput('fire -l', { aliasRepo, playlistRepo });
+
+  assert.equal(intent.kind, 'playlist');
+  assert.equal(intent.playlistName, 'fire');
+  assert.equal(intent.modifiers.loop, true);
+});
+
 test('artist alias alone (no song, no free text) falls back to an ambiguous search', () => {
   const aliasRepo = fakeAliasRepo([{ token: 'tsw', type: 'artist', value: 'Taylor Swift' }]);
   const playlistRepo = fakePlaylistRepo();

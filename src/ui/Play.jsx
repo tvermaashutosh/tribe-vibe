@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
 import StatusText from './StatusText.jsx';
 import { resolveTypedInput } from '../pipeline/index.js';
 import { buildBrowseItems } from './browseItems.js';
+import { moveSelection } from './skipListNav.js';
+import { playEscapeAction } from './playEscape.js';
 import { theme } from './theme.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
@@ -39,6 +41,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   // reliably do so from an empty box), and typing right after a fill should
   // always append, not land wherever a stale cursor position happened to be.
   const [fillNonce, setFillNonce] = useState(0);
+  const escapeClearedQuery = useRef(false);
 
   // The one place both the typed box and the browse list end up — same
   // branching the typed CLI does for song/playlist/search, so an item picked
@@ -76,7 +79,15 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
 
   useInput(
     (input, key) => {
-      if (key.escape) return onBack();
+      if (!key.escape) return;
+      if (playEscapeAction(escapeClearedQuery.current) === 'back') {
+        escapeClearedQuery.current = false;
+        return onBack();
+      }
+      escapeClearedQuery.current = true;
+      setStatus(null);
+      setQuery('');
+      setFillNonce((n) => n + 1);
     },
     { isActive: !picking },
   );
@@ -84,8 +95,8 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   // ink-text-input's own useInput explicitly ignores up/down arrows (it only
   // handles left/right for cursor movement and backspace/typing) — so this
   // moves the browse-list selection with no conflict, whether or not the
-  // search box currently has focus/content. Clamped, not wrapped, matching
-  // Picker's own listing navigation.
+  // search box currently has focus/content. Wraps at either end, like the
+  // other selectable lists in the app.
   //
   // Browsing also overwrites the search box with the highlighted item's own
   // token, replacing whatever was typed there — rather than a separate
@@ -98,8 +109,9 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   useInput(
     (input, key) => {
       if (!key.upArrow && !key.downArrow) return;
+      escapeClearedQuery.current = false;
       setStatus(null);
-      const nextIndex = key.upArrow ? Math.max(0, browseIndex - 1) : Math.min(browseItems.length - 1, browseIndex + 1);
+      const nextIndex = moveSelection(browseItems, browseIndex, key.upArrow ? -1 : 1);
       setBrowseIndex(nextIndex);
       setQuery(browseItems[nextIndex].token);
       setFillNonce((n) => n + 1);
@@ -116,10 +128,12 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
           key={fillNonce}
           value={query}
           onChange={(value) => {
+            escapeClearedQuery.current = false;
             setStatus(null);
             setQuery(value);
           }}
           onSubmit={() => {
+            escapeClearedQuery.current = false;
             setStatus(null);
             playIntent(resolveTypedInput(query, { aliasRepo: ctx.aliasRepo, playlistRepo: ctx.playlistRepo }));
           }}
@@ -154,6 +168,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
         onPlayIntent({ kind: 'song', videoId: candidate.videoId, title: candidate.title, modifiers: { loop: searchLoop } });
       }}
       onCancel={() => {
+        escapeClearedQuery.current = false;
         setStatus(null);
         setPicking(false);
       }}
