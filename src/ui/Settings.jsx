@@ -45,6 +45,7 @@ export default function Settings({ ctx, onBack }) {
     { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
     { label: `⇊ Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
     { label: `ⓘ Help messages: ${ctx.settings.showHelpMessages ? 'On' : 'Off'}`, value: '__toggleHelp__' },
+    { label: `🔒 Private mode: ${ctx.settings.privateMode ? 'On' : 'Off'}`, value: '__togglePrivateMode__' },
     { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
     { label: '⚠ Reset all data', value: '__resetAll__' },
   ];
@@ -182,6 +183,11 @@ export default function Settings({ ctx, onBack }) {
           }
           if (item.value === '__toggleHelp__') {
             ctx.saveSettings({ ...ctx.settings, showHelpMessages: !ctx.settings.showHelpMessages });
+            setSettingsRevision((revision) => revision + 1);
+            return undefined;
+          }
+          if (item.value === '__togglePrivateMode__') {
+            ctx.saveSettings({ ...ctx.settings, privateMode: !ctx.settings.privateMode });
             setSettingsRevision((revision) => revision + 1);
             return undefined;
           }

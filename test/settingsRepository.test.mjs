@@ -11,7 +11,7 @@ function tempConfigDir() {
 
 test('all() returns the defaults on a fresh install with no settings.json yet', () => {
   const repo = new SettingsRepository(tempConfigDir());
-  assert.deepEqual(repo.all(), { top: 5, concurrentDownloads: 2, showHelpMessages: false });
+  assert.deepEqual(repo.all(), { top: 5, concurrentDownloads: 2, showHelpMessages: false, privateMode: true });
 });
 
 test('save() persists to disk and a fresh repository instance reads it back', () => {
@@ -19,7 +19,7 @@ test('save() persists to disk and a fresh repository instance reads it back', ()
   new SettingsRepository(configDir).save({ top: 20 });
 
   const reloaded = new SettingsRepository(configDir);
-  assert.deepEqual(reloaded.all(), { top: 20, concurrentDownloads: 2, showHelpMessages: false });
+  assert.deepEqual(reloaded.all(), { top: 20, concurrentDownloads: 2, showHelpMessages: false, privateMode: true });
 });
 
 // Bug: save() used to reassign this.settings = next, so a caller holding
@@ -36,7 +36,7 @@ test('save() mutates the object already handed out by all(), instead of replacin
   repo.save({ top: 42 });
 
   assert.equal(repo.all(), capturedReference, 'all() must still return the exact same object identity');
-  assert.deepEqual(capturedReference, { top: 42, concurrentDownloads: 2, showHelpMessages: false }, 'the captured reference itself must reflect the save');
+  assert.deepEqual(capturedReference, { top: 42, concurrentDownloads: 2, showHelpMessages: false, privateMode: true }, 'the captured reference itself must reflect the save');
 });
 
 test('a caller that captured settings before any save() sees every later save() without re-fetching', () => {
@@ -56,7 +56,7 @@ test('save() falls back to defaults for a corrupted settings.json', () => {
   fs.writeFileSync(path.join(configDir, 'settings.json'), '{not valid json');
 
   const repo = new SettingsRepository(configDir);
-  assert.deepEqual(repo.all(), { top: 5, concurrentDownloads: 2, showHelpMessages: false });
+  assert.deepEqual(repo.all(), { top: 5, concurrentDownloads: 2, showHelpMessages: false, privateMode: true });
 });
 
 test('concurrentDownloads persists to disk independently of top, and a fresh instance reads it back', () => {
@@ -64,7 +64,7 @@ test('concurrentDownloads persists to disk independently of top, and a fresh ins
   new SettingsRepository(configDir).save({ concurrentDownloads: 5 });
 
   const reloaded = new SettingsRepository(configDir);
-  assert.deepEqual(reloaded.all(), { top: 5, concurrentDownloads: 5, showHelpMessages: false });
+  assert.deepEqual(reloaded.all(), { top: 5, concurrentDownloads: 5, showHelpMessages: false, privateMode: true });
 });
 
 test('showHelpMessages persists when enabled and defaults off for older settings files', () => {
@@ -75,4 +75,14 @@ test('showHelpMessages persists when enabled and defaults off for older settings
 
   repo.save({ ...repo.all(), showHelpMessages: true });
   assert.equal(new SettingsRepository(configDir).all().showHelpMessages, true);
+});
+
+test('privateMode defaults on for older settings files and persists when switched off', () => {
+  const configDir = tempConfigDir();
+  fs.writeFileSync(path.join(configDir, 'settings.json'), JSON.stringify({ top: 8 }));
+  const repo = new SettingsRepository(configDir);
+  assert.equal(repo.all().privateMode, true);
+
+  repo.save({ ...repo.all(), privateMode: false });
+  assert.equal(new SettingsRepository(configDir).all().privateMode, false);
 });

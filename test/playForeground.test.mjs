@@ -101,7 +101,7 @@ test('playForeground resolves once the spawned process exits', async () => {
   }
 });
 
-test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers, so one title never leaks onto another file', async () => {
+test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers when private mode is off', async () => {
   // mpv applies a bare option to every file that follows it, not just the
   // very next one — verified live against real mpv (the last of two plain
   // --force-media-title values silently won for both files). The --{ / --}
@@ -119,6 +119,7 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
         { path: '/cache/b.m4a', title: 'Song B' },
         { path: '/cache/c.m4a' },
       ],
+      privateMode: false,
       platform: fakePlatform(),
     });
     const argv = fs.readFileSync(argvFile, 'utf8');
@@ -126,6 +127,28 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
     assert.match(argv, /--\{ --force-media-title=Song B \/cache\/b\.m4a --\}/);
     assert.match(argv, /(?:^|\s)\/cache\/c\.m4a(?:\s|$)/);
     assert.match(argv, /--term-playing-msg=Playing: \$\{media-title\}/);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+test('playForeground hides titles by default while retaining file paths in private mode', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-fake-mpv-'));
+  const argvFile = path.join(dir, 'argv.txt');
+  fs.writeFileSync(path.join(dir, 'mpv'), `#!/bin/sh\nprintf '%s\\n' "$@" > "${argvFile}"\nexit 0\n`, { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${dir}:${originalPath}`;
+  try {
+    await playForeground({
+      files: [{ path: '/cache/private-video-id.webm', title: 'Secret Song Name' }],
+      platform: fakePlatform(),
+    });
+    const args = fs.readFileSync(argvFile, 'utf8').trimEnd().split('\n');
+    assert.ok(args.includes('--term-playing-msg='), 'explicitly overrides title messages from MPV config');
+    assert.ok(args.includes('/cache/private-video-id.webm'), 'still passes the cache path to MPV');
+    assert.ok(!args.some((arg) => arg.includes('Secret Song Name')));
+    assert.ok(!args.some((arg) => arg.startsWith('--force-media-title=')));
   } finally {
     process.env.PATH = originalPath;
   }

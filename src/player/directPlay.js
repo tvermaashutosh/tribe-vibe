@@ -13,13 +13,13 @@ import { trace } from '../debugTrace.js';
 // (confirmed live — no flag changes that), so a caller wanting the same
 // line for a single song has to print it itself, using the same path mpv
 // would have shown.
-export async function playSongForeground({ resolver, platform, videoId, title, loop, onReady }) {
+export async function playSongForeground({ resolver, platform, videoId, title, loop, privateMode = true, onReady }) {
   trace(`playSongForeground: downloading videoId=${videoId}`);
   const localFile = await resolver.downloadAudio(videoId, platform.getCacheDir());
   trace(`playSongForeground: downloaded to ${localFile}, calling onReady`);
   if (onReady) onReady(localFile);
   trace('playSongForeground: calling playForeground');
-  await playForeground({ files: [{ path: localFile, title }], loop, platform });
+  await playForeground({ files: [{ path: localFile, title }], loop, privateMode, platform });
   trace('playSongForeground: playForeground resolved, returning');
 }
 
@@ -49,7 +49,7 @@ export async function playSongForeground({ resolver, platform, videoId, title, l
 // one just gets the skip silently (still traced) rather than a crash either
 // way. Only if every song fails is there genuinely nothing to play, which
 // throws same as the empty-playlist case does when onEmpty isn't given.
-export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, concurrency, onPlaylistFound, onEmpty, onSongFailed, onReady }) {
+export async function playPlaylistForeground({ resolver, platform, playlistRepo, playlistName, loop, concurrency, privateMode = true, onPlaylistFound, onEmpty, onSongFailed, onReady }) {
   const playlist = playlistRepo.all().find((entry) => entry.name === playlistName);
   if (!playlist) throw new Error(`No playlist named "${playlistName}"`);
   if (playlist.songs.length === 0) {
@@ -68,5 +68,5 @@ export async function playPlaylistForeground({ resolver, platform, playlistRepo,
   });
   if (files.length === 0) throw new Error(`Playlist "${playlistName}": every song failed to download`);
   if (onReady) onReady(playlist);
-  await playForeground({ files, loop, platform });
+  await playForeground({ files, loop, privateMode, platform });
 }

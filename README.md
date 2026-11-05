@@ -1,11 +1,10 @@
 # tribe-vibe
 
-A keyboard-first CLI music player. Type an alias, hit play — mpv handles the rest.
+A keyboard-first CLI music player. Browse aliases and playlists or search from the app, then let mpv handle playback.
 
 ```
-tv tsw tt -loop=10   # play Taylor Swift's "22", looped 10 times — order/case/spacing don't matter
 tv -pause            # hotkey control
-tv                   # interactive menu
+tv                   # interactive app
 ```
 
 ## Install
@@ -65,6 +64,8 @@ These control the background player. They have nothing to act on while a foregro
 - **Export data** — writes every song, playlist, and artist alias to `~/Downloads/tribe-vibe-export.xlsx`.
 - **Result count** — how many results the Picker shows per search (default 5).
 - **Concurrent downloads** — how many songs a playlist play downloads at once, instead of strictly one at a time (default 2).
+- **Help messages** — show or hide the gray keyboard hints in the app (default off).
+- **Private mode** — hide song titles in playback output and show file paths instead (default on).
 - **Troubleshoot** — read-only checks for mpv/yt-dlp/hotkey-daemon installation, available updates, and writable data directories, each with a suggested fix.
 - **Reset all data** — wipes aliases, playlists, settings, and the audio cache, after a yes/no confirmation that defaults to "no."
 

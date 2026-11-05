@@ -26,6 +26,7 @@ export default function App({ ctx }) {
         videoId: intent.videoId,
         title: intent.title,
         loop: intent.modifiers?.loop,
+        privateMode: ctx.settings.privateMode,
         onReady: (localFile) => console.log(`Playing: ${localFile}`),
       });
       return;
@@ -39,9 +40,12 @@ export default function App({ ctx }) {
         playlistName: intent.playlistName,
         loop: intent.modifiers?.loop,
         concurrency: ctx.settings.concurrentDownloads,
-        onPlaylistFound: (playlist) => console.log(formatPlaylistSongList(playlist, 1)),
+        privateMode: ctx.settings.privateMode,
+        onPlaylistFound: ctx.settings.privateMode ? undefined : (playlist) => console.log(formatPlaylistSongList(playlist, 1)),
         onEmpty: (playlist) => console.log(`Playlist "${playlist.name}" has no songs yet — add some songs to it first.`),
-        onSongFailed: (song, err) => console.log(`Skipping "${song.title}" — ${err.message}`),
+        onSongFailed: (song, err) => console.log(
+          ctx.settings.privateMode ? `Skipping a song — ${err.message}` : `Skipping "${song.title}" — ${err.message}`,
+        ),
       });
     }
   });

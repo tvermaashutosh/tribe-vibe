@@ -89,6 +89,23 @@ test(
 );
 
 test(
+  'playSongForeground defaults to private mode and keeps the downloaded path without sending its title to MPV',
+  withArgvCapturingMpv(async (argvFile) => {
+    await playSongForeground({
+      resolver: fakeResolver(),
+      platform: fakePlatform(),
+      videoId: 'private123',
+      title: 'Private Song Title',
+    });
+
+    const args = fs.readFileSync(argvFile, 'utf8');
+    assert.match(args, /--term-playing-msg=/);
+    assert.match(args, /\/cache\/private123\.m4a/);
+    assert.doesNotMatch(args, /Private Song Title/);
+  }),
+);
+
+test(
   'playPlaylistForeground rejects a name that does not exist, or one with no songs — before ever calling onPlaylistFound or onReady',
   withFakeMpv(async () => {
     let foundCalled = false;
@@ -179,6 +196,26 @@ test(
     });
 
     assert.deepEqual(events, ['found:focus', 'download:a', 'download:b']);
+  }),
+);
+
+test(
+  'playPlaylistForeground passes privateMode off through to MPV when the user disables it',
+  withArgvCapturingMpv(async (argvFile) => {
+    const playlistRepo = {
+      all: () => [{ name: 'focus', songs: [{ videoId: 'a', title: 'Song A' }] }],
+    };
+    await playPlaylistForeground({
+      resolver: fakeResolver(),
+      platform: fakePlatform(),
+      playlistRepo,
+      playlistName: 'focus',
+      privateMode: false,
+    });
+
+    const argv = fs.readFileSync(argvFile, 'utf8');
+    assert.match(argv, /--term-playing-msg=Playing: \$\{media-title\}/);
+    assert.match(argv, /--force-media-title=Song A/);
   }),
 );
 
