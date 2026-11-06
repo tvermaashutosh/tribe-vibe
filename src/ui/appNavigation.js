@@ -1,6 +1,6 @@
-export function createInitialAppState(initialIntent) {
+export function createInitialAppState(initialIntent, initialScreen = 'main') {
   return {
-    screen: initialIntent ? 'nowPlaying' : 'main',
+    screen: initialIntent ? 'nowPlaying' : initialScreen,
     pendingIntent: initialIntent ?? null,
   };
 }

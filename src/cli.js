@@ -8,6 +8,8 @@ import { acquireSessionLock, releaseSessionLock } from './repository/sessionLock
 import { MpvDaemonSupervisor } from './player/mpvDaemonSupervisor.js';
 import { MpvIpcClient } from './player/mpvIpcClient.js';
 import { Player } from './player/player.js';
+import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
+import { formatPlaylistSongList } from './player/playlistSongList.js';
 import { formatCliStatus } from './ui/statusLevel.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
@@ -134,7 +136,12 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
 
   const launchApp = async (initialIntent) => {
     const { launchMenu } = await import('../dist/ui.js');
-    await launchMenu({
+    // Keep the shell's prompt/banner above the app intact. After MPV returns,
+    // restore this cursor and erase only the app's terminal area so Play can
+    // occupy the same view instead of being appended below MPV's logs.
+    const canRestoreAppView = Boolean(process.stdout.isTTY);
+    if (canRestoreAppView) process.stdout.write('\u001b[s');
+    const appContext = {
       platform,
       sessionLock,
       aliasRepo,
@@ -142,19 +149,76 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
       tokenRegistry,
       resolver,
       player,
-      closeDaemon: closeAndExit,
       settings: settingsRepo.all(),
       saveSettings: (next) => settingsRepo.save(next),
       initialIntent,
-    });
+      initialScreen: initialIntent ? undefined : 'main',
+      pendingPlayback: null,
+    };
+
+    // Ink and mpv cannot both own the terminal's raw input. Each play
+    // request unmounts Ink; mpv then runs as the ordinary foreground process.
+    // Once it exits, mount a fresh Ink tree at Play. Play stores its query and
+    // selection on appContext so the user returns to the same place.
+    while (true) {
+      await launchMenu(appContext);
+      const intent = appContext.pendingPlayback;
+      appContext.pendingPlayback = null;
+      if (!intent) break;
+
+      appContext.initialIntent = null;
+      appContext.initialScreen = 'play';
+      try {
+        if (intent.kind === 'song') {
+          await playSongForeground({
+            resolver,
+            platform,
+            videoId: intent.videoId,
+            title: intent.title,
+            loop: intent.modifiers?.loop,
+            privateMode: appContext.settings.privateMode,
+            onReady: (localFile) => console.log(localFile),
+          });
+        } else if (intent.kind === 'playlist') {
+          await playPlaylistForeground({
+            resolver,
+            platform,
+            playlistRepo,
+            playlistName: intent.playlistName,
+            loop: intent.modifiers?.loop,
+            concurrency: appContext.settings.concurrentDownloads,
+            privateMode: appContext.settings.privateMode,
+            onPlaylistFound: appContext.settings.privateMode
+              ? undefined
+              : (playlist) => console.log(formatPlaylistSongList(playlist, 1)),
+            onEmpty: (playlist) => console.log(`Playlist "${playlist.name}" has no songs yet — add some songs to it first.`),
+            onSongFailed: (song, err) => console.log(
+              appContext.settings.privateMode ? `Skipping a song — ${err.message}` : `Skipping "${song.title}" — ${err.message}`,
+            ),
+          });
+        }
+      } catch (err) {
+        console.error(formatCliStatus('error', `tv error: ${err.message}`));
+      }
+
+      if (appContext.settings.privateMode) {
+        // Private mode should not leave the just-played query visible when
+        // returning to Play. Reset the snapshot so Play selects its first
+        // browse item and fills the search box with that item's token.
+        appContext.playScreenState = undefined;
+      }
+      if (canRestoreAppView) process.stdout.write('\u001b[u\u001b[J');
+    }
+
     trace('cli.js: launchMenu() resolved; closing daemon connection');
     return closeAndExit();
   };
 
   // No args -> the full Ink app. All alias/playlist/settings management lives
   // here and only here — the typed grammar below never grows a management path.
-  // Playback opens the Now Playing screen, then hands the terminal to MPV so
-  // its native progress bar, logs, and keybindings remain available.
+  // Playback hands the terminal to MPV so its native progress bar, logs, and
+  // keybindings remain available, then returns to the Play screen when MPV
+  // exits.
   if (args.length === 0) {
     trace('cli.js: launching menu');
     return launchApp();

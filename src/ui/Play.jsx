@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Picker from './Picker.jsx';
@@ -12,15 +12,15 @@ import { theme } from './theme.js';
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
 // a terminal or right here. A confirmed play (deterministic intent, or a
-// Picker pick) opens the Now Playing screen and hands the terminal to MPV for
-// its native logs, progress bar, and keyboard controls.
+// Picker pick) hands the terminal to MPV for its native logs, progress bar,
+// and keyboard controls. The app restores this screen after MPV exits.
 export default function Play({ ctx, onBack, onPlayIntent }) {
   // Computed before query below, not after — its very first item is already
   // shown highlighted (❯) the moment this screen opens, so the search box
   // should already match it too, not just once you actually press an arrow.
   const browseItems = buildBrowseItems(ctx.aliasRepo, ctx.playlistRepo);
 
-  const [query, setQuery] = useState(() => browseItems[0]?.token ?? '');
+  const [query, setQuery] = useState(() => ctx.playScreenState?.query ?? browseItems[0]?.token ?? '');
   const [searchQuery, setSearchQuery] = useState('');
   // An ambiguous search still carries whatever -l/-loop the user typed —
   // remembered here since the Picker below is a whole separate render pass,
@@ -34,7 +34,9 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   // of every submit so a stale one never lingers onto whatever comes next.
   const [status, setStatus] = useState(null);
   const [picking, setPicking] = useState(false);
-  const [browseIndex, setBrowseIndex] = useState(0);
+  const [browseIndex, setBrowseIndex] = useState(() =>
+    Math.min(ctx.playScreenState?.browseIndex ?? 0, Math.max(0, browseItems.length - 1)),
+  );
   // Bumped every time browsing overwrites query below — forces TextInput to
   // remount, since ink-text-input only resets its own internal cursor to the
   // end of an externally-set value under specific conditions (it doesn't
@@ -42,6 +44,10 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   // always append, not land wherever a stale cursor position happened to be.
   const [fillNonce, setFillNonce] = useState(0);
   const escapeClearedQuery = useRef(false);
+
+  useEffect(() => {
+    ctx.playScreenState = { query, browseIndex };
+  }, [ctx, query, browseIndex]);
 
   // The one place both the typed box and the browse list end up — same
   // branching the typed CLI does for song/playlist/search, so an item picked

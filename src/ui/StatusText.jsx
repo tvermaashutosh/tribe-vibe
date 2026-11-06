@@ -7,7 +7,7 @@ import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 // against the line above it — this adds the same one-line gap Ink's own
 // outer Box padding gives the whole app, so a message here reads with the
 // same breathing room as the blank line that already separates the last
-// Ink frame from whatever prints once handOffToForeground unmounts it.
+// Ink frame from any output printed while foreground playback owns the terminal.
 export default function StatusText({ message, level = 'warning' }) {
   if (!message) return null;
   return (

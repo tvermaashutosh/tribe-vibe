@@ -8,53 +8,25 @@ import Settings from './Settings.jsx';
 import NowPlaying from './NowPlaying.jsx';
 import { theme } from './theme.js';
 import { exitCleanly } from './exitCleanly.js';
-import { playSongForeground, playPlaylistForeground } from '../player/directPlay.js';
-import { formatPlaylistSongList } from '../player/playlistSongList.js';
-import { handOffToForeground } from './handOffToForeground.js';
 import { createInitialAppState, appNavigationReducer } from './appNavigation.js';
 
 export default function App({ ctx }) {
-  const [navigation, dispatch] = useReducer(appNavigationReducer, ctx.initialIntent, createInitialAppState);
+  const [navigation, dispatch] = useReducer(
+    appNavigationReducer,
+    undefined,
+    () => createInitialAppState(ctx.initialIntent, ctx.initialScreen),
+  );
 
   const playIntent = (intent) => dispatch({ type: 'play', intent });
-
-  const playNow = async (intent) => handOffToForeground(ctx, async () => {
-    if (intent.kind === 'song') {
-      await playSongForeground({
-        resolver: ctx.resolver,
-        platform: ctx.platform,
-        videoId: intent.videoId,
-        title: intent.title,
-        loop: intent.modifiers?.loop,
-        privateMode: ctx.settings.privateMode,
-        onReady: (localFile) => console.log(localFile),
-      });
-      return;
-    }
-
-    if (intent.kind === 'playlist') {
-      await playPlaylistForeground({
-        resolver: ctx.resolver,
-        platform: ctx.platform,
-        playlistRepo: ctx.playlistRepo,
-        playlistName: intent.playlistName,
-        loop: intent.modifiers?.loop,
-        concurrency: ctx.settings.concurrentDownloads,
-        privateMode: ctx.settings.privateMode,
-        onPlaylistFound: ctx.settings.privateMode ? undefined : (playlist) => console.log(formatPlaylistSongList(playlist, 1)),
-        onEmpty: (playlist) => console.log(`Playlist "${playlist.name}" has no songs yet — add some songs to it first.`),
-        onSongFailed: (song, err) => console.log(
-          ctx.settings.privateMode ? `Skipping a song — ${err.message}` : `Skipping "${song.title}" — ${err.message}`,
-        ),
-      });
-    }
-  });
 
   useEffect(() => {
     if (!navigation.pendingIntent) return;
     const intent = navigation.pendingIntent;
     dispatch({ type: 'play-started' });
-    playNow(intent);
+    // Ink must release raw-mode stdin before foreground mpv can use the
+    // terminal. cli.js owns playback and remounts this app at Play afterward.
+    ctx.pendingPlayback = intent;
+    ctx.unmountMenu();
   }, [navigation.pendingIntent]);
 
   // Every sub-screen's own escape handler already routes back to 'main' — this
