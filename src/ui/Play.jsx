@@ -86,7 +86,8 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   useInput(
     (input, key) => {
       if (!key.escape) return;
-      if (playEscapeAction(escapeClearedQuery.current) === 'back') {
+      const queryIsBlank = typeof query !== 'string' || query.trim() === '';
+      if (queryIsBlank || playEscapeAction(escapeClearedQuery.current) === 'back') {
         escapeClearedQuery.current = false;
         return onBack();
       }
@@ -177,6 +178,11 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
         escapeClearedQuery.current = false;
         setStatus(null);
         setPicking(false);
+        if (ctx.settings.privateMode) {
+          setBrowseIndex(0);
+          setQuery(browseItems[0]?.token ?? '');
+          setFillNonce((n) => n + 1);
+        }
       }}
       onSaveAlias={(candidate, token) =>
         ctx.aliasRepo.addSongAlias(token, candidate.videoId, candidate.title, ctx.tokenRegistry)
