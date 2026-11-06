@@ -40,14 +40,14 @@ export default function Settings({ ctx, onBack }) {
   });
 
   const items = [
-    { label: '⇩ Export about', value: '__about__' },
-    { label: '⇩ Export data', value: '__export__' },
-    { label: `⚙ Result count: ${ctx.settings.top}`, value: 'top' },
-    { label: `⇊ Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
-    { label: `ⓘ Help messages: ${ctx.settings.showHelpMessages ? 'On' : 'Off'}`, value: '__toggleHelp__' },
+    { label: '📄 Export about', value: '__about__' },
+    { label: '📊 Export data', value: '__export__' },
+    { label: `🔢 Result count: ${ctx.settings.top}`, value: 'top' },
+    { label: `⬇️  Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
+    { label: `💬 Help messages: ${ctx.settings.showHelpMessages ? 'On' : 'Off'}`, value: '__toggleHelp__' },
     { label: `🔒 Private mode: ${ctx.settings.privateMode ? 'On' : 'Off'}`, value: '__togglePrivateMode__' },
-    { label: '⚕ Troubleshoot', value: '__troubleshoot__' },
-    { label: '⚠ Reset all data', value: '__resetAll__' },
+    { label: '🩺 Troubleshoot', value: '__troubleshoot__' },
+    { label: '⚠️  Reset all data', value: '__resetAll__' },
   ];
 
   if (editing) {
