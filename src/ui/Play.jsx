@@ -12,7 +12,7 @@ import { theme } from './theme.js';
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
 // a terminal or right here. A confirmed play (deterministic intent, or a
-// Picker pick) hands the terminal to MPV for its native logs, progress bar,
+// Picker pick) hands the terminal to MPV for its native progress bar,
 // and keyboard controls. The app restores this screen after MPV exits.
 export default function Play({ ctx, onBack, onPlayIntent }) {
   // Computed before query below, not after — its very first item is already

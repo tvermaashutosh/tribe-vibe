@@ -50,10 +50,15 @@ function guardVulnerableWindow(platform) {
 // --{ / --} per-file markers are the real fix (verified live: without them,
 // the last --force-media-title on the line wins for the whole playlist).
 export function playForeground({ files, loop, privateMode = true, platform }) {
-  // Keep MPV's file path output, but don't print the media title in private
-  // mode. Pass an empty value explicitly to override a term-playing-msg set
-  // in the user's MPV config file.
-  const args = ['--no-video', '--term-osd-bar', privateMode ? '--term-playing-msg=' : '--term-playing-msg=${media-title}'];
+  // Hide mpv's cplayer info logs and print the local filepath without the
+  // default "Playing:" prefix. Customize the status line to omit its A: tag.
+  const args = [
+    '--no-video',
+    '--term-osd-bar',
+    '--msg-level=cplayer=warn',
+    '--term-playing-msg=${path}',
+    '--term-status-msg=${playback-time} / ${duration} (${percent-pos}%)',
+  ];
   // --loop-playlist, not --loop (an alias for --loop-file) — the latter
   // reloads/seeks just the current file forever and never advances past it,
   // so a multi-song playlist looped with it only ever replayed song 1.

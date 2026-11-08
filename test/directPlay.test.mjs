@@ -99,7 +99,8 @@ test(
     });
 
     const args = fs.readFileSync(argvFile, 'utf8');
-    assert.match(args, /--term-playing-msg=/);
+    assert.match(args, /--term-playing-msg=\$\{path\}/);
+    assert.match(args, /--term-status-msg=\$\{playback-time\} \/ \$\{duration\} \(\$\{percent-pos\}%\)/);
     assert.match(args, /\/cache\/private123\.m4a/);
     assert.doesNotMatch(args, /Private Song Title/);
   }),
@@ -214,10 +215,11 @@ test(
     });
 
     const argv = fs.readFileSync(argvFile, 'utf8');
-    assert.match(argv, /--term-playing-msg=\$\{media-title\}/);
+    assert.match(argv, /--term-playing-msg=\$\{path\}/);
+    assert.match(argv, /--term-status-msg=\$\{playback-time\} \/ \$\{duration\} \(\$\{percent-pos\}%\)/);
+    assert.match(argv, /--msg-level=cplayer=warn/);
     assert.match(argv, /--force-media-title=Song A/);
     assert.match(argv, /(?:^|\s)\/cache\/a\.m4a(?:\s|$)/);
-    assert.doesNotMatch(argv, /Playing:? \/cache\/a\.m4a/);
   }),
 );
 

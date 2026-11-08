@@ -216,7 +216,7 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
 
   // No args -> the full Ink app. All alias/playlist/settings management lives
   // here and only here — the typed grammar below never grows a management path.
-  // Playback hands the terminal to MPV so its native progress bar, logs, and
+  // Playback hands the terminal to MPV so its native progress bar, warnings, and
   // keybindings remain available, then returns to the Play screen when MPV
   // exits.
   if (args.length === 0) {

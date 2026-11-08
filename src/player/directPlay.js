@@ -7,12 +7,8 @@ import { trace } from '../debugTrace.js';
 // onReady, if given, fires once the download finishes and right before mpv
 // takes over the terminal — that's the accurate moment to announce what's
 // about to play, not before (the file isn't ready yet) and not after (mpv
-// has already exited by the time this whole call resolves). Passed the
-// downloaded file's local path: mpv itself only prints its own "Playing:
-// <path>" line for a genuine multi-entry playlist, never for a lone file
-// (confirmed live — no flag changes that), so a caller wanting the same
-// line for a single song has to print it itself, using the same path mpv
-// would have shown.
+// has already exited by the time this whole call resolves). For a single
+// song it receives the downloaded file's local path.
 export async function playSongForeground({ resolver, platform, videoId, title, loop, privateMode = true, onReady }) {
   trace(`playSongForeground: downloading videoId=${videoId}`);
   const localFile = await resolver.downloadAudio(videoId, platform.getCacheDir());

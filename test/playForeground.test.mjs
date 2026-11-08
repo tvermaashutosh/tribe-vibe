@@ -126,7 +126,9 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
     assert.match(argv, /--\{ --force-media-title=Song A \/cache\/a\.m4a --\}/);
     assert.match(argv, /--\{ --force-media-title=Song B \/cache\/b\.m4a --\}/);
     assert.match(argv, /(?:^|\s)\/cache\/c\.m4a(?:\s|$)/);
-    assert.match(argv, /--term-playing-msg=\$\{media-title\}/);
+    assert.match(argv, /--term-playing-msg=\$\{path\}/);
+    assert.match(argv, /--term-status-msg=\$\{playback-time\} \/ \$\{duration\} \(\$\{percent-pos\}%\)/);
+    assert.match(argv, /--msg-level=cplayer=warn/);
   } finally {
     process.env.PATH = originalPath;
   }
@@ -145,7 +147,12 @@ test('playForeground hides titles by default while retaining file paths in priva
       platform: fakePlatform(),
     });
     const args = fs.readFileSync(argvFile, 'utf8').trimEnd().split('\n');
-    assert.ok(args.includes('--term-playing-msg='), 'explicitly overrides title messages from MPV config');
+    assert.ok(args.includes('--term-playing-msg=${path}'), 'prints the filepath without mpv\'s default prefix');
+    assert.ok(
+      args.includes('--term-status-msg=${playback-time} / ${duration} (${percent-pos}%)'),
+      'shows the progress status without the audio marker',
+    );
+    assert.ok(args.includes('--msg-level=cplayer=warn'), 'suppresses mpv informational file logs');
     assert.ok(args.includes('/cache/private-video-id.webm'), 'still passes the cache path to MPV');
     assert.ok(!args.some((arg) => arg.includes('Secret Song Name')));
     assert.ok(!args.some((arg) => arg.startsWith('--force-media-title=')));
