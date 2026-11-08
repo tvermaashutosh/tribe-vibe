@@ -37,7 +37,7 @@ When `npm run setup` is run from Fish, it also installs a Fish integration that 
 
 Nothing is reserved except your own alias/playlist names — a song actually titled "loop" still works when entered in the Play screen. Volume is MPV's own; tribe-vibe doesn't set or remember it.
 
-Every play started from the Play screen opens the `Now Playing` screen, then runs MPV attached to the terminal with its progress bar and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). The local file path is shown without a `Playing:` prefix, and the status line shows elapsed time, duration, and percent without the audio marker. Informational file-start logs are hidden; warnings and errors remain visible. The screen title stays above MPV's output while playback runs.
+Every play started from the Play screen opens the `Now Playing` screen, then runs MPV attached to the terminal with its progress bar and keybindings (space to pause, arrows to seek, `<`/`>` to skip within a playlist, `q` to quit). The local file path is shown without a `Playing:` prefix; when private mode is off, the song title appears below it. The status line shows elapsed time, duration, and percent without the audio marker. Informational file-start logs are hidden; warnings and errors remain visible. The screen title stays above MPV's output while playback runs.
 
 **Hotkeys** — meant to be bound to keys, not typed:
 

@@ -51,12 +51,13 @@ function guardVulnerableWindow(platform) {
 // the last --force-media-title on the line wins for the whole playlist).
 export function playForeground({ files, loop, privateMode = true, platform }) {
   // Hide mpv's cplayer info logs and print the local filepath without the
-  // default "Playing:" prefix. Customize the status line to omit its A: tag.
+  // default "Playing:" prefix. Show the song title only outside private
+  // mode, and customize the status line to omit its A: tag.
   const args = [
     '--no-video',
     '--term-osd-bar',
     '--msg-level=cplayer=warn',
-    '--term-playing-msg=${path}',
+    `--term-playing-msg=${privateMode ? '${path}' : '${path}\\n${media-title}'}`,
     '--term-status-msg=${playback-time} / ${duration} (${percent-pos}%)',
   ];
   // --loop-playlist, not --loop (an alias for --loop-file) — the latter

@@ -215,7 +215,7 @@ test(
     });
 
     const argv = fs.readFileSync(argvFile, 'utf8');
-    assert.match(argv, /--term-playing-msg=\$\{path\}/);
+    assert.match(argv, /--term-playing-msg=\$\{path\}\n\$\{media-title\}/);
     assert.match(argv, /--term-status-msg=\$\{playback-time\} \/ \$\{duration\} \(\$\{percent-pos\}%\)/);
     assert.match(argv, /--msg-level=cplayer=warn/);
     assert.match(argv, /--force-media-title=Song A/);
