@@ -35,6 +35,11 @@ export default function App({ ctx }) {
     if (key.escape && navigation.screen === 'main') exitCleanly(ctx.platform, 0, ctx.sessionLock);
   });
 
+  const backFromPlay = () => {
+    ctx.playScreenState = undefined;
+    dispatch({ type: 'navigate', screen: 'main' });
+  };
+
   return (
     <Box
       flexDirection="column"
@@ -44,7 +49,7 @@ export default function App({ ctx }) {
       <Text bold color={theme.accent}>tribe-vibe</Text>
       {navigation.screen === 'main' && <MainMenu onNavigate={(screen) => dispatch({ type: 'navigate', screen })} />}
       {navigation.screen === 'nowPlaying' && <NowPlaying />}
-      {navigation.screen === 'play' && <Play ctx={ctx} onBack={() => dispatch({ type: 'navigate', screen: 'main' })} onPlayIntent={playIntent} />}
+      {navigation.screen === 'play' && <Play ctx={ctx} onBack={backFromPlay} onPlayIntent={playIntent} />}
       {navigation.screen === 'songs' && <AliasScreen ctx={ctx} type="song" onBack={() => dispatch({ type: 'navigate', screen: 'main' })} onPlayIntent={playIntent} />}
       {navigation.screen === 'playlists' && <Playlists ctx={ctx} onBack={() => dispatch({ type: 'navigate', screen: 'main' })} onPlayIntent={playIntent} />}
       {navigation.screen === 'artists' && <AliasScreen ctx={ctx} type="artist" onBack={() => dispatch({ type: 'navigate', screen: 'main' })} />}
