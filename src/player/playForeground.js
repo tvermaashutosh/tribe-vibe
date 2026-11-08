@@ -53,7 +53,7 @@ export function playForeground({ files, loop, privateMode = true, platform }) {
   // Keep MPV's file path output, but don't print the media title in private
   // mode. Pass an empty value explicitly to override a term-playing-msg set
   // in the user's MPV config file.
-  const args = ['--no-video', '--term-osd-bar', privateMode ? '--term-playing-msg=' : '--term-playing-msg=Playing: ${media-title}'];
+  const args = ['--no-video', '--term-osd-bar', privateMode ? '--term-playing-msg=' : '--term-playing-msg=${media-title}'];
   // --loop-playlist, not --loop (an alias for --loop-file) — the latter
   // reloads/seeks just the current file forever and never advances past it,
   // so a multi-song playlist looped with it only ever replayed song 1.

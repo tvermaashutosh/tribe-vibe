@@ -126,7 +126,7 @@ test('playForeground scopes each file\'s title with mpv\'s own --{ / --} markers
     assert.match(argv, /--\{ --force-media-title=Song A \/cache\/a\.m4a --\}/);
     assert.match(argv, /--\{ --force-media-title=Song B \/cache\/b\.m4a --\}/);
     assert.match(argv, /(?:^|\s)\/cache\/c\.m4a(?:\s|$)/);
-    assert.match(argv, /--term-playing-msg=Playing: \$\{media-title\}/);
+    assert.match(argv, /--term-playing-msg=\$\{media-title\}/);
   } finally {
     process.env.PATH = originalPath;
   }

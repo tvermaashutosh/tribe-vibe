@@ -214,8 +214,10 @@ test(
     });
 
     const argv = fs.readFileSync(argvFile, 'utf8');
-    assert.match(argv, /--term-playing-msg=Playing: \$\{media-title\}/);
+    assert.match(argv, /--term-playing-msg=\$\{media-title\}/);
     assert.match(argv, /--force-media-title=Song A/);
+    assert.match(argv, /(?:^|\s)\/cache\/a\.m4a(?:\s|$)/);
+    assert.doesNotMatch(argv, /Playing:? \/cache\/a\.m4a/);
   }),
 );
 
