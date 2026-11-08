@@ -177,7 +177,6 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
             title: intent.title,
             loop: intent.modifiers?.loop,
             privateMode: appContext.settings.privateMode,
-            onReady: (localFile) => console.log(localFile),
           });
         } else if (intent.kind === 'playlist') {
           await playPlaylistForeground({
