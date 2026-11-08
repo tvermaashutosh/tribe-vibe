@@ -8,7 +8,7 @@ import Settings from './Settings.jsx';
 import NowPlaying from './NowPlaying.jsx';
 import { theme } from './theme.js';
 import { exitCleanly } from './exitCleanly.js';
-import { createInitialAppState, appNavigationReducer } from './appNavigation.js';
+import { createInitialAppState, appNavigationReducer, shouldRenderAppFrame } from './appNavigation.js';
 
 export default function App({ ctx }) {
   const [navigation, dispatch] = useReducer(
@@ -39,6 +39,9 @@ export default function App({ ctx }) {
     ctx.playScreenState = undefined;
     dispatch({ type: 'navigate', screen: 'main' });
   };
+  const renderAppFrame = shouldRenderAppFrame(navigation.screen, ctx.settings.privateMode);
+
+  if (!renderAppFrame) return null;
 
   return (
     <Box

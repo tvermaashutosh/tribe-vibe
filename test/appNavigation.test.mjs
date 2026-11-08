@@ -1,9 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appNavigationReducer, createInitialAppState } from '../src/ui/appNavigation.js';
+import { appNavigationReducer, createInitialAppState, shouldRenderAppFrame } from '../src/ui/appNavigation.js';
 
 test('the app opens its regular menu when there is no startup playback intent', () => {
   assert.deepEqual(createInitialAppState(undefined), { screen: 'main', pendingIntent: null });
+});
+
+test('the app frame is omitted only during private playback', () => {
+  assert.equal(shouldRenderAppFrame('nowPlaying', true), false);
+  assert.equal(shouldRenderAppFrame('nowPlaying', false), true);
+  assert.equal(shouldRenderAppFrame('main', true), true);
 });
 
 test('a typed startup intent renders Now Playing before playback begins', () => {

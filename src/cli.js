@@ -11,6 +11,7 @@ import { Player } from './player/player.js';
 import { playSongForeground, playPlaylistForeground } from './player/directPlay.js';
 import { formatPlaylistSongList } from './player/playlistSongList.js';
 import { formatCliStatus } from './ui/statusLevel.js';
+import { clearPrivatePlaybackBlankLine } from './ui/clearPrivatePlaybackBlankLine.js';
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 // import { resolveTypedInput } from './pipeline/index.js';
@@ -165,6 +166,7 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
       const intent = appContext.pendingPlayback;
       appContext.pendingPlayback = null;
       if (!intent) break;
+      clearPrivatePlaybackBlankLine({ privateMode: appContext.settings.privateMode, stdout: process.stdout });
 
       appContext.initialIntent = null;
       appContext.initialScreen = 'play';

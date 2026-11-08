@@ -5,6 +5,10 @@ export function createInitialAppState(initialIntent, initialScreen = 'main') {
   };
 }
 
+export function shouldRenderAppFrame(screen, privateMode) {
+  return screen !== 'nowPlaying' || !privateMode;
+}
+
 export function appNavigationReducer(state, action) {
   if (action.type === 'navigate') return { ...state, screen: action.screen };
   if (action.type === 'play') return { screen: 'nowPlaying', pendingIntent: action.intent };

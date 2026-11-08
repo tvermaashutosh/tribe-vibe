@@ -153,7 +153,7 @@ test('playForeground hides titles by default while retaining file paths in priva
       'shows the progress status without the audio marker',
     );
     assert.ok(args.includes('--msg-level=cplayer=warn'), 'suppresses mpv informational file logs');
-    assert.ok(args.includes('/cache/private-video-id.webm'), 'still passes the cache path to MPV');
+    assert.ok(args.includes('/cache/private-video-id.webm'), 'still passes the cache path to MPV for playback');
     assert.ok(!args.some((arg) => arg.includes('Secret Song Name')));
     assert.ok(!args.some((arg) => arg.startsWith('--force-media-title=')));
   } finally {
