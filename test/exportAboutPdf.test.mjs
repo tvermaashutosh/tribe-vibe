@@ -46,6 +46,12 @@ test('exportAboutPdf covers the general, LLD, and design-pattern content', async
   assert.match(pdf, /keyboard-first CLI music player/); // general
   assert.match(pdf, /Repository layer/); // LLD
   assert.match(pdf, /Design Patterns/); // design patterns
+  assert.match(pdf, /song aliases, artist aliases, and playlists/);
+  assert.match(pdf, /Private mode hides playback headings and song titles; file paths remain visible/);
+  assert.match(pdf, /acquires the session lock/);
+  assert.match(pdf, /Picker previews/);
+  assert.match(pdf, /stream directly to the background daemon/);
+  assert.match(pdf, /New and changed alias\/playlist entries get an updatedAt/);
   assert.match(pdf, /Adapter/);
   assert.match(pdf, /Proxy/);
   assert.match(pdf, /Factory/);
