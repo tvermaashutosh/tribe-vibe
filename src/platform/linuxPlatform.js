@@ -42,6 +42,13 @@ export class LinuxPlatform {
     return 'sudo apt install mpv yt-dlp sxhkd';
   }
 
+  getInstallCommand(binaryName) {
+    const packages = { mpv: 'mpv', 'yt-dlp': 'yt-dlp', sxhkd: 'sxhkd' };
+    const packageName = packages[binaryName];
+    if (!packageName) throw new Error(`No Linux install package is configured for "${binaryName}"`);
+    return `sudo apt install ${packageName}`;
+  }
+
   getYtDlpUpgradeInstructions() {
     return 'sudo apt install --only-upgrade yt-dlp';
   }

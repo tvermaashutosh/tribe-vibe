@@ -46,17 +46,37 @@ test(
 test('findAllOnPath finds every matching binary across PATH, including duplicates', () => {
   const dirA = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-a-'));
   const dirB = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-b-'));
-  const dirC = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-c-'));
   fs.writeFileSync(path.join(dirA, 'yt-dlp'), '#!/bin/sh\n');
   fs.writeFileSync(path.join(dirB, 'yt-dlp'), '#!/bin/sh\n');
-  // dirC deliberately has no yt-dlp — confirms it's not just returning every PATH dir
+  // dirA appears twice to confirm the same physical copy is only reported once.
 
   const fakePlatform = { getExecutableExtension: () => '' };
   const originalPath = process.env.PATH;
-  process.env.PATH = [dirA, dirB, dirC].join(path.delimiter);
+  process.env.PATH = [dirA, dirB, dirA].join(path.delimiter);
   try {
     const found = findAllOnPath('yt-dlp', fakePlatform);
     assert.deepEqual(found, [path.join(dirA, 'yt-dlp'), path.join(dirB, 'yt-dlp')]);
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
+
+test('findAllOnPath deduplicates executable symlinks to the same physical copy', () => {
+  const dirA = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-real-'));
+  const dirB = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-path-alias-'));
+  fs.writeFileSync(path.join(dirA, 'yt-dlp'), '#!/bin/sh\n');
+  try {
+    fs.symlinkSync(path.join(dirA, 'yt-dlp'), path.join(dirB, 'yt-dlp'));
+  } catch (err) {
+    if (process.platform === 'win32' && ['EPERM', 'EACCES'].includes(err.code)) return;
+    throw err;
+  }
+
+  const fakePlatform = { getExecutableExtension: () => '' };
+  const originalPath = process.env.PATH;
+  process.env.PATH = [dirA, dirB].join(path.delimiter);
+  try {
+    assert.deepEqual(findAllOnPath('yt-dlp', fakePlatform), [path.join(dirA, 'yt-dlp')]);
   } finally {
     process.env.PATH = originalPath;
   }
@@ -180,6 +200,24 @@ test(
     assert.equal(result.missing, true);
   }),
 );
+
+test('checkYtDlp shows versions for distinct PATH copies and identifies the selected one', async () => {
+  const dirA = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-ytdlp-first-'));
+  const dirB = fs.mkdtempSync(path.join(os.tmpdir(), 'tribe-vibe-ytdlp-second-'));
+  fs.writeFileSync(path.join(dirA, 'yt-dlp'), '#!/bin/sh\necho 2026.08.19\n', { mode: 0o755 });
+  fs.writeFileSync(path.join(dirB, 'yt-dlp'), '#!/bin/sh\necho 2026.03.17\n', { mode: 0o755 });
+
+  const originalPath = process.env.PATH;
+  process.env.PATH = [dirA, dirB].join(path.delimiter);
+  try {
+    const result = await checkYtDlp({ getExecutableExtension: () => '' });
+    assert.equal(result.status, 'warning');
+    assert.ok(result.message.includes(`using: ${path.join(dirA, 'yt-dlp')} — 2026.08.19`));
+    assert.ok(result.message.includes(`${path.join(dirB, 'yt-dlp')} (2026.03.17)`));
+  } finally {
+    process.env.PATH = originalPath;
+  }
+});
 
 test(
   'checkMpv flags missing:true when mpv is genuinely absent',

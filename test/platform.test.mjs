@@ -35,6 +35,13 @@ test('WindowsPlatform names npm as npm.cmd, not npm.exe or bare npm', () => {
   assert.equal(new WindowsPlatform().getNpmCommand(), 'npm.cmd');
 });
 
+test('platform adapters generate install commands for one missing dependency at a time', () => {
+  assert.equal(new LinuxPlatform().getInstallCommand('mpv'), 'sudo apt install mpv');
+  assert.equal(new LinuxPlatform().getInstallCommand('yt-dlp'), 'sudo apt install yt-dlp');
+  assert.equal(new MacPlatform().getInstallCommand('skhd'), 'brew install koekeishiya/formulae/skhd');
+  assert.equal(new WindowsPlatform().getInstallCommand('AutoHotkey'), 'scoop install autohotkey');
+});
+
 test('MacPlatform and LinuxPlatform both name npm as the plain executable', () => {
   assert.equal(new MacPlatform().getNpmCommand(), 'npm');
   assert.equal(new LinuxPlatform().getNpmCommand(), 'npm');

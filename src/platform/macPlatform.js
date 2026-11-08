@@ -46,6 +46,13 @@ export class MacPlatform {
     return 'brew install mpv yt-dlp koekeishiya/formulae/skhd';
   }
 
+  getInstallCommand(binaryName) {
+    const packages = { mpv: 'mpv', 'yt-dlp': 'yt-dlp', skhd: 'koekeishiya/formulae/skhd' };
+    const packageName = packages[binaryName];
+    if (!packageName) throw new Error(`No macOS install package is configured for "${binaryName}"`);
+    return `brew install ${packageName}`;
+  }
+
   getYtDlpUpgradeInstructions() {
     return 'brew upgrade yt-dlp';
   }

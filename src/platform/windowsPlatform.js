@@ -43,6 +43,13 @@ export class WindowsPlatform {
     return 'scoop install mpv yt-dlp autohotkey';
   }
 
+  getInstallCommand(binaryName) {
+    const packages = { mpv: 'mpv', 'yt-dlp': 'yt-dlp', AutoHotkey: 'autohotkey' };
+    const packageName = packages[binaryName];
+    if (!packageName) throw new Error(`No Windows install package is configured for "${binaryName}"`);
+    return `scoop install ${packageName}`;
+  }
+
   getYtDlpUpgradeInstructions() {
     return 'scoop update yt-dlp';
   }

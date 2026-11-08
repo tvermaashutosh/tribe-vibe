@@ -15,9 +15,14 @@ export function findAllOnPath(binaryName, platform) {
   const pathDirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
   const executableName = `${binaryName}${platform.getExecutableExtension()}`;
   const found = [];
+  const realPaths = new Set();
   for (const dir of pathDirs) {
     const candidate = path.join(dir, executableName);
-    if (fs.existsSync(candidate)) found.push(candidate);
+    if (!fs.existsSync(candidate)) continue;
+    const realPath = fs.realpathSync(candidate);
+    if (realPaths.has(realPath)) continue;
+    realPaths.add(realPath);
+    found.push(candidate);
   }
   return found;
 }
@@ -105,11 +110,18 @@ export async function checkYtDlp(platform) {
   const currentVersion = versionResult.stdout.trim() || 'unknown';
 
   if (installs.length > 1) {
+    const versions = await Promise.all(
+      installs.map(async (install) => {
+        const result = await spawnAndCollect(install, ['--version']);
+        return { install, version: result.stdout.trim() || 'unknown' };
+      }),
+    );
+    const otherVersions = versions.slice(1).map(({ install, version }) => `${install} (${version})`).join(', ');
     return {
       name: YTDLP_BINARY,
       status: 'warning',
-      message: `Found ${installs.length} copies on PATH (using: ${installs[0]}) — current version ${currentVersion}.`,
-      fix: `Multiple installs can shadow each other depending on PATH order. Installs found: ${installs.join(', ')}`,
+      message: `Found ${installs.length} copies on PATH (using: ${installs[0]} — ${currentVersion}); other copies: ${otherVersions}.`,
+      fix: `PATH order selects the first copy. Remove or reorder older installations if needed.`,
     };
   }
 

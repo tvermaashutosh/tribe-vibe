@@ -98,17 +98,19 @@ async function main() {
     return;
   }
 
-  const installCommand = platform.getInstallInstructions();
+  const installCommands = missing.map(({ name }) => platform.getInstallCommand(name));
   if (!installDeps) {
     console.log(formatCliStatus('warning', `\nMissing: ${missing.map((result) => result.name).join(', ')}`));
-    console.log(`Run: ${installCommand}`);
+    for (const command of installCommands) console.log(`Run: ${command}`);
     console.log('(or re-run this with --install-deps to have it run that for you)');
     return;
   }
 
   console.log(formatCliStatus('warning', `\nInstalling missing deps: ${missing.map((result) => result.name).join(', ')}`));
-  console.log(`Running: ${installCommand}`);
-  await runInstallCommand(installCommand);
+  for (const command of installCommands) {
+    console.log(`Running: ${command}`);
+    await runInstallCommand(command);
+  }
   console.log(formatCliStatus('success', '\nDone — try: tv'));
 }
 

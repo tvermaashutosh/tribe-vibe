@@ -15,7 +15,7 @@ Requires Node.js 18+, [mpv](https://mpv.io), and [yt-dlp](https://github.com/yt-
 npm run setup
 ```
 
-Installs npm packages, builds, and links `tv`/`tribe-vibe` onto your PATH, then checks whether mpv/yt-dlp/the hotkey daemon are actually present and prints the exact install command for whatever's missing (never runs it for you, unless you ask):
+Installs npm packages, builds, and links `tv`/`tribe-vibe` onto your PATH, then checks whether mpv/yt-dlp/the hotkey daemon are actually present and prints the exact install command for each missing dependency (never runs it for you, unless you ask). When `--install-deps` is used, it installs only dependencies marked missing:
 
 ```
 npm run setup -- --install-deps
