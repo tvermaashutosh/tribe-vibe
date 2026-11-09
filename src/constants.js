@@ -3,6 +3,13 @@
 export const CONTROL_FLAGS = ['pause', 'resume', 'next', 'prev', 'shuffle'];
 
 export const DEFAULT_SETTINGS = Object.freeze({ top: 5, concurrentDownloads: 2, showHelpMessages: false, privateMode: true });
+export const DEFAULT_PLAYLIST_DOWNLOAD_CONCURRENCY = 1;
+
+// Only an explicit false opts out of private mode; missing or null values
+// keep the app's default-on behavior.
+export function isPrivateModeEnabled(value) {
+  return value !== false;
+}
 
 // Conventional 128+signum exit codes — shared by every place in the app that
 // needs to exit with the "correct" code after handling a signal itself,

@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { trace } from '../debugTrace.js';
-import { SIGNAL_EXIT_CODES, MPV_BINARY } from '../constants.js';
+import { SIGNAL_EXIT_CODES, MPV_BINARY, DEFAULT_SETTINGS, isPrivateModeEnabled } from '../constants.js';
 
 // Guards only the window between "mpv just exited" and this process's own
 // controlled exit — confirmed by tracing a real hang that this process can
@@ -49,7 +49,8 @@ function guardVulnerableWindow(platform) {
 // set before file 1 would silently leak onto file 2, 3, etc. mpv's own
 // --{ / --} per-file markers are the real fix (verified live: without them,
 // the last --force-media-title on the line wins for the whole playlist).
-export function playForeground({ files, loop, privateMode = true, platform }) {
+export function playForeground({ files, loop, privateMode = DEFAULT_SETTINGS.privateMode, platform }) {
+  privateMode = isPrivateModeEnabled(privateMode);
   // Hide mpv's cplayer info logs and print the local filepath without the
   // default "Playing:" prefix. Show the song title only outside private mode.
   const args = [

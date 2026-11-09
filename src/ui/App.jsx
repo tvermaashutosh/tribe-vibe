@@ -9,6 +9,7 @@ import NowPlaying from './NowPlaying.jsx';
 import { exitCleanly } from './exitCleanly.js';
 import { createInitialAppState, appNavigationReducer, shouldRenderAppFrame } from './appNavigation.js';
 import { AppDisplayProvider, ViewHeading } from './AppDisplay.jsx';
+import { isPrivateModeEnabled } from '../constants.js';
 
 export default function App({ ctx }) {
   const [navigation, dispatch] = useReducer(
@@ -40,12 +41,13 @@ export default function App({ ctx }) {
     ctx.playScreenState = undefined;
     dispatch({ type: 'navigate', screen: 'main' });
   };
-  const renderAppFrame = shouldRenderAppFrame(navigation.screen, ctx.settings.privateMode);
+  const privateMode = isPrivateModeEnabled(ctx.settings.privateMode);
+  const renderAppFrame = shouldRenderAppFrame(navigation.screen, privateMode);
 
   if (!renderAppFrame) return null;
 
   return (
-    <AppDisplayProvider privateMode={ctx.settings.privateMode}>
+    <AppDisplayProvider privateMode={privateMode}>
       <Box
         flexDirection="column"
         paddingLeft={1}

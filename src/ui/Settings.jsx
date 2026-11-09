@@ -10,6 +10,7 @@ import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import StatusText from './StatusText.jsx';
 import { theme } from './theme.js';
 import { ViewHeading } from './AppDisplay.jsx';
+import { isPrivateModeEnabled } from '../constants.js';
 
 // `editing` holds the raw settings key ('top', 'concurrentDownloads') — this
 // maps it to the human-facing words used in prompts/messages, so a reader
@@ -46,7 +47,7 @@ export default function Settings({ ctx, onBack, onSettingsChange }) {
     { label: `🔢 Result count: ${ctx.settings.top}`, value: 'top' },
     { label: `⬇️  Concurrent downloads: ${ctx.settings.concurrentDownloads}`, value: 'concurrentDownloads' },
     { label: `💬 Help messages: ${ctx.settings.showHelpMessages ? 'On' : 'Off'}`, value: '__toggleHelp__' },
-    { label: `🔒 Private mode: ${ctx.settings.privateMode ? 'On' : 'Off'}`, value: '__togglePrivateMode__' },
+    { label: `🔒 Private mode: ${isPrivateModeEnabled(ctx.settings.privateMode) ? 'On' : 'Off'}`, value: '__togglePrivateMode__' },
     { label: '🩺 Troubleshoot', value: '__troubleshoot__' },
     { label: '⚠️  Reset all data', value: '__resetAll__' },
   ];
@@ -191,7 +192,7 @@ export default function Settings({ ctx, onBack, onSettingsChange }) {
             return undefined;
           }
           if (item.value === '__togglePrivateMode__') {
-            ctx.saveSettings({ ...ctx.settings, privateMode: !ctx.settings.privateMode });
+            ctx.saveSettings({ ...ctx.settings, privateMode: !isPrivateModeEnabled(ctx.settings.privateMode) });
             setSettingsRevision((revision) => revision + 1);
             onSettingsChange?.();
             return undefined;

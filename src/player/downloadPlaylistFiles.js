@@ -1,4 +1,5 @@
 import { trace } from '../debugTrace.js';
+import { DEFAULT_PLAYLIST_DOWNLOAD_CONCURRENCY } from '../constants.js';
 
 // Pulled out of directPlay.js's own playPlaylistForeground, plain logic with
 // no Ink/mpv involved, so it's testable without needing a real TTY.
@@ -11,7 +12,7 @@ import { trace } from '../debugTrace.js';
 // happens to hand them back, not the order they were started in). A shared
 // cursor (nextIndex), not fixed batches — a fast download doesn't have to
 // wait for a slow one started alongside it before picking up the next song.
-export async function downloadPlaylistFiles({ resolver, cacheDir, songs, concurrency = 1, onSongFailed }) {
+export async function downloadPlaylistFiles({ resolver, cacheDir, songs, concurrency = DEFAULT_PLAYLIST_DOWNLOAD_CONCURRENCY, onSongFailed }) {
   const files = new Array(songs.length);
   let nextIndex = 0;
 

@@ -15,7 +15,7 @@ import { clearPrivatePlaybackBlankLine } from './ui/clearPrivatePlaybackBlankLin
 import { YoutubeResolver } from './resolvers/youtubeResolver.js';
 import { createCommandRegistry } from './commands/commandRegistry.js';
 // import { resolveTypedInput } from './pipeline/index.js';
-import { CONTROL_FLAGS, SIGNAL_EXIT_CODES } from './constants.js';
+import { CONTROL_FLAGS, SIGNAL_EXIT_CODES, isPrivateModeEnabled } from './constants.js';
 import { killAllMpv } from './player/killAllMpv.js';
 import { trace, truncateTraceLogForNewSession } from './debugTrace.js';
 
@@ -166,7 +166,8 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
       const intent = appContext.pendingPlayback;
       appContext.pendingPlayback = null;
       if (!intent) break;
-      clearPrivatePlaybackBlankLine({ privateMode: appContext.settings.privateMode, stdout: process.stdout });
+      const privateMode = isPrivateModeEnabled(appContext.settings.privateMode);
+      clearPrivatePlaybackBlankLine({ privateMode, stdout: process.stdout });
 
       appContext.initialIntent = null;
       appContext.initialScreen = 'play';
@@ -178,7 +179,7 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
             videoId: intent.videoId,
             title: intent.title,
             loop: intent.modifiers?.loop,
-            privateMode: appContext.settings.privateMode,
+            privateMode,
           });
         } else if (intent.kind === 'playlist') {
           await playPlaylistForeground({
@@ -188,13 +189,13 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
             playlistName: intent.playlistName,
             loop: intent.modifiers?.loop,
             concurrency: appContext.settings.concurrentDownloads,
-            privateMode: appContext.settings.privateMode,
-            onPlaylistFound: appContext.settings.privateMode
+            privateMode,
+            onPlaylistFound: privateMode
               ? undefined
               : (playlist) => console.log(formatPlaylistSongList(playlist, 1)),
             onEmpty: (playlist) => console.log(`Playlist "${playlist.name}" has no songs yet — add some songs to it first.`),
             onSongFailed: (song, err) => console.log(
-              appContext.settings.privateMode ? `Skipping a song — ${err.message}` : `Skipping "${song.title}" — ${err.message}`,
+              privateMode ? `Skipping a song — ${err.message}` : `Skipping "${song.title}" — ${err.message}`,
             ),
           });
         }
@@ -202,7 +203,7 @@ async function runSession({ args, platform, isControlFlag, flag, sessionLock }) 
         console.error(formatCliStatus('error', `tv error: ${err.message}`));
       }
 
-      if (appContext.settings.privateMode) {
+      if (privateMode) {
         // Private mode should not leave the just-played query visible when
         // returning to Play. Reset the snapshot so Play selects its first
         // browse item and fills the search box with that item's token.

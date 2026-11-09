@@ -7,6 +7,7 @@ import { DIVIDER_ITEM } from './divider.js';
 import { theme } from './theme.js';
 import { buildSearchResultRows } from './searchResultRows.js';
 import { ViewHeading } from './AppDisplay.jsx';
+import { DEFAULT_SETTINGS } from '../constants.js';
 
 // The shared Search -> List -> Listen -> Pick flow. Reused across several
 // call sites: an ambiguous free-text play (confirm = play now), song-alias
@@ -16,7 +17,7 @@ import { ViewHeading } from './AppDisplay.jsx';
 // pinned as a permanent shortcut in the same motion, without redoing it later.
 export default function Picker({
   initialQuery = '',
-  top = 5,
+  top = DEFAULT_SETTINGS.top,
   resolver,
   player,
   onConfirm,
@@ -24,7 +25,7 @@ export default function Picker({
   onSaveAlias,
   onAddToPlaylist,
   playlists = [],
-  showHelpMessages = false,
+  showHelpMessages = DEFAULT_SETTINGS.showHelpMessages,
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [phase, setPhase] = useState(initialQuery ? 'searching' : 'typing');

@@ -9,6 +9,7 @@ import { moveSelection } from './skipListNav.js';
 import { playEscapeAction } from './playEscape.js';
 import { theme } from './theme.js';
 import { ViewHeading } from './AppDisplay.jsx';
+import { isPrivateModeEnabled } from '../constants.js';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
@@ -179,7 +180,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
         escapeClearedQuery.current = false;
         setStatus(null);
         setPicking(false);
-        if (ctx.settings.privateMode) {
+        if (isPrivateModeEnabled(ctx.settings.privateMode)) {
           setBrowseIndex(0);
           setQuery(browseItems[0]?.token ?? '');
           setFillNonce((n) => n + 1);
