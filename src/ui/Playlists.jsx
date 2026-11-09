@@ -10,6 +10,7 @@ import { DIVIDER_ITEM } from './divider.js';
 import { sortByRecency } from './sortByRecency.js';
 import { buildPlaylistListItems } from './playlistListItems.js';
 import { theme } from './theme.js';
+import { ViewHeading } from './AppDisplay.jsx';
 
 // One screen for everything playlist-related: the list of existing playlists
 // (add/remove/reorder/replace songs, rename, delete), plus creating a brand
@@ -69,7 +70,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>Playlists</Text>
+        <ViewHeading>Playlists</ViewHeading>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}
@@ -195,7 +196,7 @@ export default function Playlists({ ctx, onBack, onPlayIntent }) {
   if (mode === 'songSearchInput') {
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>{pendingAction === 'add' ? 'Add song' : 'Replace song'}</Text>
+        <ViewHeading>{pendingAction === 'add' ? 'Add song' : 'Replace song'}</ViewHeading>
         {ctx.settings.showHelpMessages && <Text color={theme.dim}>Same grammar as Play — artist alias, song alias, both, or free text.</Text>}
         <TextInput
           value={songQuery}

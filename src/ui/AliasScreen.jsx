@@ -9,6 +9,7 @@ import { resolveTypedInput } from '../pipeline/index.js';
 import { DIVIDER_ITEM } from './divider.js';
 import { buildAliasListItems } from './aliasListItems.js';
 import { theme } from './theme.js';
+import { ViewHeading } from './AppDisplay.jsx';
 
 const SCREEN_LABEL = { song: 'Songs', artist: 'Artists' };
 
@@ -62,7 +63,7 @@ export default function AliasScreen({ ctx, type, onBack, onPlayIntent }) {
     ];
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>{SCREEN_LABEL[type]}</Text>
+        <ViewHeading>{SCREEN_LABEL[type]}</ViewHeading>
         <SkipList
           items={items}
           onHighlight={() => setError(null)}

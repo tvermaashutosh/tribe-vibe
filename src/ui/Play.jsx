@@ -8,6 +8,7 @@ import { buildBrowseItems } from './browseItems.js';
 import { moveSelection } from './skipListNav.js';
 import { playEscapeAction } from './playEscape.js';
 import { theme } from './theme.js';
+import { ViewHeading } from './AppDisplay.jsx';
 
 // Runs the exact same Pipeline the typed CLI uses (normalize -> classify ->
 // resolve) — so "tsw tt loop=10" behaves identically whether you typed it in
@@ -129,7 +130,7 @@ export default function Play({ ctx, onBack, onPlayIntent }) {
   if (!picking) {
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>Play</Text>
+        <ViewHeading>Play</ViewHeading>
         {ctx.settings.showHelpMessages && <Text color={theme.dim}>Same grammar as the terminal — order, case, and spacing never matter.</Text>}
         <TextInput
           key={fillNonce}

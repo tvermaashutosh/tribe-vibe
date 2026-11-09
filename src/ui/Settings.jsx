@@ -9,13 +9,14 @@ import { resetAllData } from '../repository/resetAllData.js';
 import { STATUS_ICON, STATUS_COLOR } from './statusLevel.js';
 import StatusText from './StatusText.jsx';
 import { theme } from './theme.js';
+import { ViewHeading } from './AppDisplay.jsx';
 
 // `editing` holds the raw settings key ('top', 'concurrentDownloads') — this
 // maps it to the human-facing words used in prompts/messages, so a reader
 // never sees the internal key name itself.
 const SETTING_LABEL = { top: 'result count', concurrentDownloads: 'concurrent downloads' };
 
-export default function Settings({ ctx, onBack }) {
+export default function Settings({ ctx, onBack, onSettingsChange }) {
   const [mode, setMode] = useState('list');
   const [editing, setEditing] = useState(null);
   const [value, setValue] = useState('');
@@ -70,6 +71,7 @@ export default function Settings({ ctx, onBack }) {
               // same object reference sees this update too, no manual
               // re-patch needed here anymore.
               ctx.saveSettings({ ...ctx.settings, [editing]: parsed });
+              onSettingsChange?.();
             } else {
               showStatus(
                 `"${value}" isn't a positive whole number — kept ${SETTING_LABEL[editing] ?? editing}: ${ctx.settings[editing]}`,
@@ -112,6 +114,7 @@ export default function Settings({ ctx, onBack }) {
                 saveSettings: ctx.saveSettings,
                 platform: ctx.platform,
               });
+              onSettingsChange?.();
               showStatus('All tv data has been reset.', 'success');
             } else {
               showStatus(null);
@@ -126,7 +129,7 @@ export default function Settings({ ctx, onBack }) {
   if (mode === 'troubleshoot') {
     return (
       <Box flexDirection="column">
-        <Text bold color={theme.secondary}>Troubleshoot</Text>
+        <ViewHeading>Troubleshoot</ViewHeading>
         {diagnostics === null && <Text color={theme.dim}>Running checks...</Text>}
         {diagnostics?.map((check) => (
           <Box flexDirection="column" key={check.name} marginBottom={1}>
@@ -142,7 +145,7 @@ export default function Settings({ ctx, onBack }) {
 
   return (
     <Box flexDirection="column">
-      <Text bold color={theme.secondary}>Settings</Text>
+      <ViewHeading>Settings</ViewHeading>
       <SelectInput
         items={items}
         onHighlight={() => showStatus(null)}
@@ -184,11 +187,13 @@ export default function Settings({ ctx, onBack }) {
           if (item.value === '__toggleHelp__') {
             ctx.saveSettings({ ...ctx.settings, showHelpMessages: !ctx.settings.showHelpMessages });
             setSettingsRevision((revision) => revision + 1);
+            onSettingsChange?.();
             return undefined;
           }
           if (item.value === '__togglePrivateMode__') {
             ctx.saveSettings({ ...ctx.settings, privateMode: !ctx.settings.privateMode });
             setSettingsRevision((revision) => revision + 1);
+            onSettingsChange?.();
             return undefined;
           }
           setEditing(item.value);

@@ -6,6 +6,7 @@ import StatusText from './StatusText.jsx';
 import { DIVIDER_ITEM } from './divider.js';
 import { theme } from './theme.js';
 import { buildSearchResultRows } from './searchResultRows.js';
+import { ViewHeading } from './AppDisplay.jsx';
 
 // The shared Search -> List -> Listen -> Pick flow. Reused across several
 // call sites: an ambiguous free-text play (confirm = play now), song-alias
@@ -193,7 +194,7 @@ export default function Picker({
 
   return (
     <Box flexDirection="column">
-      <Text bold color={theme.secondary}>Results</Text>
+      <ViewHeading>Results</ViewHeading>
       {results.length === 0 && <Text color={theme.warning}>⚠ No results found — press esc and try a different search.</Text>}
       {results.map((result, i) => {
         const prefix = i === index ? '❯ ' : '  ';
